@@ -205,7 +205,7 @@ def render_chunk(args):
     a, b, path = args
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "bgr24",
            "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium",
-           "-crf", "18", "-pix_fmt", "yuv420p", "-threads", "2", path]
+           "-crf", "23", "-pix_fmt", "yuv420p", "-threads", "2", path]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     for f in range(a, b):
         p.stdin.write(render_frame(f).tobytes())

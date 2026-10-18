@@ -419,6 +419,8 @@ def s_calendar(g, t, L, d):
                 g.text("→", CX + 10, 790, 120, "kanit", sc=pop(t, L[3] + 0.3))
                 for i, x in enumerate((290, 790)):
                     k = pop(t, L[3] + 0.5 + i * 0.25)
+                    if k <= 0.001:
+                        continue
                     with g.alpha(0.9):
                         g.c.save()
                         g.c.translate(x, 707)
