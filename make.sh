@@ -4,7 +4,7 @@
 #   ./make.sh my_voice.m4a 1.1   ใช้เสียงอัดเอง (เร่งความเร็ว 1.1 เท่า)
 set -euo pipefail
 cd "$(dirname "$0")"
-OUT=${OUT:-output/alaska_18oct_1080p60.mp4}
+OUT=${OUT:-output/${EPISODE:-alaska}_1080p60.mp4}
 mkdir -p build output
 
 if [ $# -ge 1 ]; then
