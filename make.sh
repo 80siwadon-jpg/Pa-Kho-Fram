@@ -17,7 +17,7 @@ python3 src/tts.py --model "$MODEL" --target 89     # build/narration.wav + time
 python3 src/render.py                               # build/video.mp4 + cues.json
 python3 src/audio.py                                # build/mix.wav
 ffmpeg -y -loglevel error -i build/video.mp4 -i build/mix.wav \
-  -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k \
+  -map 0:v -map 1:a -c:v libx264 -preset medium -b:v 8M -maxrate 11M -bufsize 16M -pix_fmt yuv420p -c:a aac -b:a 192k \
   -af "loudnorm=I=-14:TP=-1.5:LRA=11" -shortest -movflags +faststart \
   output/alaska_18oct_1080p60.mp4
 echo "done -> output/alaska_18oct_1080p60.mp4"
