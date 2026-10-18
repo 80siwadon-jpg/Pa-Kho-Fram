@@ -1,6 +1,7 @@
 """ใช้เสียงอัดของคุณเองเป็นเสียงพากย์
 
-วิธีอัด: อ่านบทใน script_data.py ตามลำดับ (ข้อความซับ) เว้นจังหวะ ~1 วินาทีระหว่างบรรทัด
+วิธีทำเสียง: อ่าน/สร้างเสียงจากบท output/script_*.txt ตามลำดับ เว้นจังหวะระหว่างบรรทัด
+(ช่วงหยุดระหว่างบรรทัดต้องยาวกว่าช่วงหยุดภายในบรรทัด เช่น ขึ้นบรรทัดใหม่/จุด ในเครื่องมือสร้างเสียง)
 ไฟล์อะไรก็ได้ที่ ffmpeg อ่านได้ (m4a, mp3, wav ...)
 
 python3 src/voice.py my_voice.m4a --tempo 1.1
@@ -58,7 +59,7 @@ def speech_runs(x, min_gap=0.18):
     return [(max(a * hop - pad, 0), min(b * hop + pad, len(x))) for a, b in merged]
 
 
-def split_lines(x, runs, n_lines, keep_gap=0.1):
+def split_lines(x, runs, n_lines, keep_gap=0.15):
     if len(runs) < n_lines:
         sys.exit(f"เจอช่วงพูด {len(runs)} ช่วง แต่บทมี {n_lines} บรรทัด — เว้นจังหวะระหว่างบรรทัดให้ชัดขึ้นนะ")
     gaps = [runs[i + 1][0] - runs[i][1] for i in range(len(runs) - 1)]
@@ -79,6 +80,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("audio")
     ap.add_argument("--tempo", type=float, default=1.0, help="1.1 = เร็วขึ้น 10%%")
+    ap.add_argument("--gap", type=float, default=0.3, help="ช่วงหายใจระหว่างบรรทัด (วินาที)")
     ap.add_argument("--out", default="build")
     a = ap.parse_args()
     items = [(scene, disp) for scene, lines in SCENES for disp, _ in lines]
@@ -87,7 +89,7 @@ def main():
     lines = split_lines(x, runs, len(items))
     for (scene, disp), y in zip(items, lines):
         print(f"{len(y) / SR:5.2f}s  {disp}")
-    timeline.build([(s, d, y) for (s, d), y in zip(items, lines)], a.out)
+    timeline.build([(s, d, y) for (s, d), y in zip(items, lines)], a.out, a.gap, a.gap + 0.15)
 
 
 if __name__ == "__main__":

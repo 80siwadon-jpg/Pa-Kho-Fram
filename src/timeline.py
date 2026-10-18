@@ -14,13 +14,13 @@ SCENE_GAP = 0.18   # ช่องว่างระหว่างฉาก
 TAIL = 1.2         # เผื่อท้ายคลิป
 
 
-def build(clips, out_dir):
+def build(clips, out_dir, line_gap=LINE_GAP, scene_gap=SCENE_GAP):
     """clips = [(scene, text, samples@48k float32), ...]"""
     os.makedirs(out_dir, exist_ok=True)
     t, prev, lines = LEAD_IN, None, []
     for scene, text, x in clips:
         if prev is not None:
-            t += SCENE_GAP if scene != prev else LINE_GAP
+            t += scene_gap if scene != prev else line_gap
         dur = len(x) / SR
         lines.append({"scene": scene, "text": text, "start": round(t, 3), "end": round(t + dur, 3)})
         t += dur
