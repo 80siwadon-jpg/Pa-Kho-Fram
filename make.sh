@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # สร้างคลิป: เสียงพากย์ -> ภาพ + ซับ -> mp4
-#   ./make.sh                    ใช้เสียง AI (ชั่วคราว)
+#   ./make.sh                    ใช้เสียง Gemini (ถ้ามี GEMINI_API_KEY) ไม่งั้นเสียง MMS ชั่วคราว
 #   ./make.sh my_voice.m4a 1.1   ใช้เสียงอัดเอง (เร่งความเร็ว 1.1 เท่า)
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -9,6 +9,8 @@ mkdir -p build output
 
 if [ $# -ge 1 ]; then
   python3 src/voice.py "$1" --tempo "${2:-1.0}"
+elif [ -n "${GEMINI_API_KEY:-}" ]; then
+  python3 src/gemini_tts.py          # เสียงจริงของช่อง: Gemini Enceladus, Promo/hype, Rapid fire
 else
   MODEL=${MODEL:-models/vits-mms-tha}
   if [ ! -f "$MODEL/model.onnx" ]; then
