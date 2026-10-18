@@ -36,6 +36,8 @@ Language: Thai.
 #### TRANSCRIPT
 {text}"""
 SR_IN = 24000
+PAUSE = "\n[short pause]\n"
+MAX_CHARS = 1400
 
 
 class QuotaError(Exception):
@@ -86,12 +88,20 @@ def speak(text, models, voice_name, key, cache):
                 "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": voice_name}}},
             },
         }
-        try:
-            r = call(f"models/{model}:generateContent", body, key)
-        except QuotaError:
-            print(f"  โควตารายวันของ {model} หมด ลองโมเดลถัดไป")
+        pcm = None
+        for attempt in range(2):   # บางครั้งตอบกลับแบบไม่มีเสียง (finishReason SAFETY/OTHER) -> ลองใหม่ 1 ครั้ง
+            try:
+                r = call(f"models/{model}:generateContent", body, key)
+            except QuotaError:
+                print(f"  โควตารายวันของ {model} หมด ลองโมเดลถัดไป")
+                break
+            cand = r["candidates"][0]
+            if "content" in cand:
+                pcm = base64.b64decode(cand["content"]["parts"][0]["inlineData"]["data"])
+                break
+            print(f"  {model} ไม่ส่งเสียงกลับ ({cand.get('finishReason')}) ลองใหม่")
+        if pcm is None:
             continue
-        pcm = base64.b64decode(r["candidates"][0]["content"]["parts"][0]["inlineData"]["data"])
         h = hashlib.sha1(f"{model}|{voice_name}|{PROMPT}|{text}".encode()).hexdigest()[:16]
         p = os.path.join(cache, h + ".wav")
         with wave.open(p, "wb") as w:
@@ -122,14 +132,29 @@ def main():
     os.makedirs(cache, exist_ok=True)
 
     items = [(scene, disp) for scene, lines in SCENES for disp, _ in lines]
-    texts = [clean(d) for _, d in items]
     models = [a.model] if a.model else tts_models(key)
-    path, model = speak("\n".join(texts), models, a.voice, key, cache)
-    print("model:", model, "voice:", a.voice)
 
-    x = voice.load(path, a.tempo)
-    runs = voice.speech_runs(x, min_gap=0.04)
-    lines = voice.split_lines(x, runs, [voice.weight(t) for t in texts], keep_gap=0.08)
+    # บทยาวเกิน ~1400 ตัวอักษร โมเดลส่งเสียงไม่จบ -> แบ่งเป็นก้อนตามฉาก (บทสั้นยังเป็นก้อนเดียว แคชเดิมใช้ได้)
+    chunks, cur, n = [], [], 0
+    for scene, lines in SCENES:
+        size = sum(len(clean(d)) for d, _ in lines)
+        if cur and n + size > MAX_CHARS:
+            chunks.append(cur)
+            cur, n = [], 0
+        cur += [(scene, d) for d, _ in lines]
+        n += size
+    chunks.append(cur)
+
+    lines = []
+    for ci, chunk in enumerate(chunks):
+        texts = [clean(d) for _, d in chunk]
+        # แท็ก [short pause] ทำให้เกิดช่วงหยุดชัด ๆ ระหว่างบรรทัด (โมเดลไม่อ่านออกเสียง) -> ตัดบรรทัดได้แม่น
+        path, model = speak(PAUSE.join(texts), models, a.voice, key, cache)
+        models = [model] + [m for m in models if m != model]   # ใช้โมเดลเดียวกันทุกก้อน เสียงจะได้เหมือนกัน
+        print(f"chunk {ci + 1}/{len(chunks)} model: {model} voice: {a.voice}")
+        x = voice.load(path, a.tempo)
+        runs = voice.speech_runs(x, min_gap=0.04)
+        lines += voice.split_lines(x, runs, [voice.weight(t) for t in texts], keep_gap=0.08)
     for (_, disp), y in zip(items, lines):
         print(f"  {len(y) / timeline.SR:4.1f}s  {disp}")
     timeline.build([(s, d, y) for (s, d), y in zip(items, lines)], a.out, a.gap, a.gap + 0.12)

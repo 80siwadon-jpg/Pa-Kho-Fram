@@ -63,7 +63,31 @@ def speech_runs(x, min_gap=0.18):
     return out
 
 
-def split_lines(x, runs, weights, keep_gap=0.15):
+def subdivide(x, runs, min_len=0.18):
+    """ซอย run ยาว ๆ ที่จุดเสียงเบาลงระหว่างพยางค์ (energy dip) ให้ตัดบรรทัดได้แม้ผู้พูดไม่หยุด"""
+    hop = int(HOP * SR)
+    out = []
+    for a, b in runs:
+        n = (b - a) // hop
+        if n < 2 * min_len / HOP:
+            out.append((a, b))
+            continue
+        e = np.sqrt(np.mean(x[a:a + n * hop].reshape(n, hop) ** 2, axis=1) + 1e-12)
+        e = np.convolve(e, np.ones(5) / 5, mode="same")
+        win = int(0.15 / HOP)
+        cuts, last = [], 0
+        for i in range(win, n - win):
+            seg = e[i - win:i + win + 1]
+            if e[i] == seg.min() and e[i] < 0.6 * seg.max() and (i - last) * HOP >= min_len \
+                    and (n - i) * HOP >= min_len:
+                cuts.append(i)
+                last = i
+        edges = [a] + [a + c * hop for c in cuts] + [b]
+        out += list(zip(edges[:-1], edges[1:]))
+    return out
+
+
+def split_lines(x, runs, weights, keep_gap=0.15, refine=None, labels=None, label_w=10.0):
     """จัดช่วงพูด (runs) เป็นบรรทัดตามบท ด้วย dynamic programming:
     ความยาวแต่ละบรรทัดควรใกล้สัดส่วนจำนวนตัวอักษร และควรตัดตรงช่วงหยุดยาว"""
     n, m = len(weights), len(runs)
@@ -74,6 +98,11 @@ def split_lines(x, runs, weights, keep_gap=0.15):
     csum = np.concatenate([[0], np.cumsum(dur)])
     w = np.asarray(weights, float)
     exp = csum[-1] * w / w.sum()
+    if labels is not None:   # lab_cost[k, j] = ผลรวมความไม่ตรงของ run 0..j-1 ถ้าเป็นบรรทัด k (ถ่วงด้วยความยาว)
+        lab = np.asarray(labels, float)
+        miss = np.where(lab[None, :] < 0, 0.0,
+                        np.minimum(np.abs(lab[None, :] - np.arange(n)[:, None]), 3.0)) * dur[None, :]
+        lab_cost = np.concatenate([np.zeros((n, 1)), np.cumsum(miss, axis=1)], axis=1)
     INF = 1e18
     cost = np.full((n + 1, m + 1), INF)
     back = np.zeros((n + 1, m + 1), int)
@@ -85,6 +114,8 @@ def split_lines(x, runs, weights, keep_gap=0.15):
                     continue
                 d = csum[j] - csum[i]
                 c = cost[k - 1, i] + (d - exp[k - 1]) ** 2 / exp[k - 1] - 4.0 * gap[j - 1] * (k < n)
+                if labels is not None:   # ถอดเสียงบอกว่า run นี้น่าจะเป็นบรรทัดไหน
+                    c += label_w * float(lab_cost[k - 1, j] - lab_cost[k - 1, i])
                 if c < cost[k, j]:
                     cost[k, j], back[k, j] = c, i
     bounds, j = [], m
@@ -92,8 +123,11 @@ def split_lines(x, runs, weights, keep_gap=0.15):
         i = back[k, j]
         bounds.append((i, j))
         j = i
+    bounds = list(reversed(bounds))
+    if refine is not None:
+        bounds = refine(x, runs, bounds)
     lines = []
-    for i, j in reversed(bounds):
+    for i, j in bounds:
         parts = []
         for r in range(i, j):
             if parts:   # ช่องเงียบภายในบรรทัด: ย่อให้ไม่เกิน keep_gap (ไม่ยืด)
@@ -101,6 +135,120 @@ def split_lines(x, runs, weights, keep_gap=0.15):
             parts.append(x[runs[r][0]:runs[r][1]])
         lines.append(np.concatenate(parts))
     return lines
+
+
+def align(h, s):
+    """Needleman-Wunsch: คืน pos[i] = ตำแหน่งใน s ที่ตัวอักษร h[i] จับคู่ (หรือใกล้ที่สุด)"""
+    n, m = len(h), len(s)
+    D = np.zeros((n + 1, m + 1), np.int32)
+    D[:, 0] = np.arange(n + 1)
+    D[0, :] = np.arange(m + 1)
+    sarr = np.frombuffer(s.encode("utf-32-le"), np.uint32)
+    for i in range(1, n + 1):
+        sub = D[i - 1, :-1] + (sarr != ord(h[i - 1]))
+        row = np.minimum(sub, D[i - 1, 1:] + 1)
+        # การลบใน s (เดินแนวนอน) ต้องสะสมทีละช่อง
+        for j in range(1, m + 1):
+            v = row[j - 1]
+            w = D[i, j - 1] + 1
+            D[i, j] = v if v < w else w
+    pos = [0] * n
+    i, j = n, m
+    while i > 0 and j > 0:
+        if D[i, j] == D[i - 1, j - 1] + (s[j - 1] != h[i - 1]):
+            pos[i - 1] = j - 1
+            i, j = i - 1, j - 1
+        elif D[i, j] == D[i - 1, j] + 1:
+            pos[i - 1] = j - 1
+            i -= 1
+        else:
+            j -= 1
+    while i > 0:
+        pos[i - 1] = 0
+        i -= 1
+    return pos
+
+
+def whisper_labels(x, runs, texts, refiner, seg_len=1.0):
+    """ติดป้าย 'บรรทัดที่น่าจะเป็น' ให้แต่ละ run: ถอดเสียงเป็นท่อน ~1.4 วิ แล้วจัดตำแหน่งตัวอักษรเทียบบท"""
+    S, line_of = "", []
+    for k, t in enumerate(texts):
+        sk = skeleton(t)
+        S += sk
+        line_of += [k] * len(sk)
+    segs, cur = [], []
+    for r, (a, b) in enumerate(runs):
+        cur.append(r)
+        if (runs[cur[-1]][1] - runs[cur[0]][0]) / SR >= seg_len:
+            segs.append(cur)
+            cur = []
+    if cur:
+        segs.append(cur)
+    H, owner = "", []
+    for si, seg in enumerate(segs):
+        h = refiner.hear(x, runs[seg[0]][0], runs[seg[-1]][1])
+        H += h
+        owner += [si] * len(h)
+    pos = align(H, S) if H else []
+    labels = [-1] * len(runs)
+    for si, seg in enumerate(segs):
+        idx = [line_of[pos[i]] for i in range(len(H)) if owner[i] == si]
+        if not idx:
+            continue
+        a0, a1 = runs[seg[0]][0], runs[seg[-1]][1]
+        for r in seg:   # run ในท่อน -> ตำแหน่งตามสัดส่วนเวลา
+            f = ((runs[r][0] + runs[r][1]) / 2 - a0) / max(a1 - a0, 1)
+            labels[r] = idx[min(int(f * len(idx)), len(idx) - 1)]
+    return labels
+
+
+CONS = set("กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรลวศษสหฬอฮ0123456789")
+
+
+def skeleton(text):
+    """เหลือแต่พยัญชนะ/ตัวเลข ให้เทียบกับผลถอดเสียงที่สะกดผิดได้"""
+    return "".join(c for c in text if c in CONS)
+
+
+class WhisperRefiner:
+    """ขยับจุดตัดบรรทัดให้ตรงคำพูดจริง: ลองช่วงหยุดใกล้ ๆ จุดที่ DP เลือก
+    แล้วถอดเสียงช่วงต้นของบรรทัดถัดไปมาเทียบกับข้อความ"""
+
+    def __init__(self, model_dir, texts, sr=SR, span=3):
+        import sherpa_onnx
+        m = model_dir.rstrip("/") + "/"
+        self.rec = sherpa_onnx.OfflineRecognizer.from_whisper(
+            encoder=m + "small-encoder.int8.onnx", decoder=m + "small-decoder.int8.onnx",
+            tokens=m + "small-tokens.txt", language="th", task="transcribe", num_threads=4)
+        self.texts, self.sr, self.span = texts, sr, span
+
+    def hear(self, x, a, b):
+        y = x[a:b]
+        n = int(len(y) * 16000 / self.sr)
+        y = np.interp(np.linspace(0, len(y) - 1, n), np.arange(len(y)), y).astype(np.float32)
+        s = self.rec.create_stream()
+        s.accept_waveform(16000, y)
+        self.rec.decode_stream(s)
+        return skeleton(s.result.text)
+
+    def score(self, x, runs, r, k):
+        """r = run แรกของบรรทัด k: เสียง 1.6 วิแรกควรขึ้นต้นด้วยข้อความบรรทัด k"""
+        import difflib
+        a = runs[r][0]
+        heard = self.hear(x, a, min(a + int(1.6 * self.sr), len(x)))
+        want = skeleton(self.texts[k])[:max(len(heard), 4)]
+        return difflib.SequenceMatcher(None, heard[:len(want) + 2], want).ratio()
+
+    def __call__(self, x, runs, bounds):
+        starts = [i for i, _ in bounds]
+        m = len(runs)
+        for k in range(1, len(starts)):
+            lo = max(starts[k - 1] + 1, starts[k] - self.span)
+            hi = min(m - (len(starts) - k), starts[k] + self.span)
+            cands = range(lo, hi + 1)
+            best = max(cands, key=lambda r: (round(self.score(x, runs, r, k), 2), -abs(r - starts[k])))
+            starts[k] = best
+        return [(starts[k], starts[k + 1] if k + 1 < len(starts) else m) for k in range(len(starts))]
 
 
 def weight(text):

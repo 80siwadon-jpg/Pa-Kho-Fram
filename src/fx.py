@@ -1,7 +1,7 @@
 """เอฟเฟกต์ที่ใช้ร่วมกันทุกตอน"""
 import math
 
-from gfx import BLUE, GOLD, GREY, H, INK, MINT, RED, W, e_out, hn, seg
+from gfx import BLUE, GOLD, GREY, INK, MINT, RED, W, e_out, hn, seg
 
 
 def confetti(g, t, n=60, seed=3, t0=0.0):
@@ -12,7 +12,7 @@ def confetti(g, t, n=60, seed=3, t0=0.0):
             continue
         x = (hn(i, seed) * 0.5 + 0.5) * W + 40 * math.sin(tt * 3 + i)
         y = 250 + tt * (300 + 200 * (hn(i, seed + 1) * 0.5 + 0.5)) - 100
-        if y > H:
+        if y > 1300:   # ไม่ตกลงพื้นที่ซับ/พื้นที่ล่าง
             continue
         with g.at(x, y, 1, tt * 300 * hn(i, seed + 2)):
             g.rrect(-12, -7, 24, 14, 3, cols[i % len(cols)], 3)
