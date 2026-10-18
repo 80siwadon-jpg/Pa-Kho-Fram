@@ -26,7 +26,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="models/vits-mms-tha")
     ap.add_argument("--speed", type=float, default=1.4, help=">1 = พูดเร็วขึ้น")
-    ap.add_argument("--out", default="build")
+    ap.add_argument("--out", default=os.path.join("build", os.environ.get("EPISODE", "alaska")))
     a = ap.parse_args()
     tts = sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(
         model=sherpa_onnx.OfflineTtsModelConfig(

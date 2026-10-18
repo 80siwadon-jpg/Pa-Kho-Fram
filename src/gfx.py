@@ -47,6 +47,12 @@ COAT = hexc("#33343d")
 TUNIC = hexc("#3e5a47")
 SKYBLUE = hexc("#8fb8de")
 HAIR = hexc("#6b4a33")
+LYGREEN = hexc("#3c8d4f")
+SAND = hexc("#f3e2bf")
+SAND2 = hexc("#e2c48e")
+TAN = hexc("#e6b48a")
+KHAKI = hexc("#b9a06a")
+CREAM = hexc("#f2ecdc")
 
 
 # ---------------------------------------------------------------- easing
@@ -188,6 +194,17 @@ class Draw:
             yield
         finally:
             c.restore()
+
+    @contextmanager
+    def silhouette(self, col=INK, a=1.0):
+        """วาดสิ่งที่อยู่ข้างในเป็นเงาสีเดียว"""
+        self.c.push_group()
+        try:
+            yield
+        finally:
+            pat = self.c.pop_group()
+            self.c.set_source_rgba(col[0], col[1], col[2], a)
+            self.c.mask(pat)
 
     @contextmanager
     def alpha(self, a):
@@ -707,6 +724,10 @@ class Draw:
             bands = [WHITE, BLUE, RED]
         elif kind == "us":
             bands = [RED, WHITE, RED, WHITE, RED, WHITE, RED]
+        elif kind == "ly":     # ธงลิเบีย แดง-ดำ-เขียว (ฝ่ายต่อต้าน 2011 / ปัจจุบัน)
+            bands = [RED, INK, INK, LYGREEN]
+        elif kind == "lyg":    # ธงเขียวล้วนยุคกัดดาฟี
+            bands = [LYGREEN]
         else:
             bands = [NAVY]
         nb = len(bands)
@@ -738,6 +759,11 @@ class Draw:
                 stars = [(0.12, 0.62), (0.22, 0.58), (0.30, 0.66), (0.38, 0.72), (0.40, 0.88), (0.54, 0.88), (0.55, 0.72), (0.86, 0.22)]
                 for i, (u, v) in enumerate(stars):
                     self.star(u * w, v * h + yoff(u), 22 if i == 7 else 13, GOLD, 3)
+            if kind == "ly":
+                u = 0.5
+                self.circle(u * w, h / 2 + yoff(u), h * 0.15, WHITE, 0)
+                self.circle(u * w + h * 0.05, h / 2 + yoff(u), h * 0.13, INK, 0)
+                self.star(u * w + h * 0.12, h / 2 + yoff(u), h * 0.07, WHITE, 0)
             pts = [(w * i / n, yoff(i / n)) for i in range(n + 1)]
             pts += [(w * i / n, h + yoff(i / n)) for i in range(n, -1, -1)]
             c.move_to(*pts[0])

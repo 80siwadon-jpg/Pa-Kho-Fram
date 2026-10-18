@@ -113,7 +113,7 @@ def main():
     ap.add_argument("--voice", default="Enceladus")
     ap.add_argument("--tempo", type=float, default=1.0, help="เร่งความเร็วเพิ่ม เช่น 1.1")
     ap.add_argument("--gap", type=float, default=0.2, help="ช่วงหายใจระหว่างบรรทัด")
-    ap.add_argument("--out", default="build")
+    ap.add_argument("--out", default=os.path.join("build", os.environ.get("EPISODE", "alaska")))
     a = ap.parse_args()
     key = os.environ.get("GEMINI_API_KEY")
     if not key:

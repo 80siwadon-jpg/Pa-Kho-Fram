@@ -11,3 +11,4 @@ _spec.loader.exec_module(_mod)
 # บรรทัดเป็น str ได้ (ข้อความซับ = ข้อความที่อ่าน) หรือ (ซับ, คำอ่านสำหรับ TTS ชั่วคราว)
 SCENES = [(name, [ln if isinstance(ln, tuple) else (ln, ln.replace("\u200b", " ")) for ln in lines])
           for name, lines in _mod.SCENES]
+HEADER = getattr(_mod, "HEADER", "วันนี้ในอดีต")

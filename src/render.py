@@ -16,10 +16,17 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
 from gfx import INK, PAPER, W, H, Draw, e_back, e_io, text_sprite  # noqa: E402
-from scenes import NO_IRIS, SCENES  # noqa: E402
+from script_data import HEADER  # noqa: E402
+import importlib.util  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BUILD = os.path.join(ROOT, "build")
+EPISODE = os.environ.get("EPISODE", "alaska")
+_spec = importlib.util.spec_from_file_location("scenes", os.path.join(ROOT, "episodes", EPISODE, "scenes.py"))
+_scenes = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_scenes)
+SCENES, NO_IRIS = _scenes.SCENES, getattr(_scenes, "NO_IRIS", set())
+
+BUILD = os.path.join(ROOT, "build", EPISODE)
 FPS = 60
 IRIS = 0.35
 SUB_TOP = 1400   # ขอบบนของซับ (ซับหลายบรรทัดขยายลงล่าง ไม่ทับภาพ)
@@ -48,7 +55,7 @@ def header(g, t, tl):
         g.rrect(-290, -42, 580, 84, 42, (1, 1, 1, 1), 6)
         g.circle(-240, 0, 20, (0.78, 0.33, 0.24, 1), 5)
         g.circle(-240, 0, 6, PAPER, 0)
-        g.text("วันนี้ในอดีต · 18 ต.ค. 1867", 20, -2, 40, "kanit")
+        g.text(HEADER, 20, -2, 40, "kanit")
 
 
 def subtitles(g, t, tl):

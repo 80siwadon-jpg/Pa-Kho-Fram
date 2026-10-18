@@ -114,7 +114,7 @@ def main():
     ap.add_argument("audio")
     ap.add_argument("--tempo", type=float, default=1.0, help="1.1 = เร็วขึ้น 10%%")
     ap.add_argument("--gap", type=float, default=0.3, help="ช่วงหายใจระหว่างบรรทัด (วินาที)")
-    ap.add_argument("--out", default="build")
+    ap.add_argument("--out", default=os.path.join("build", os.environ.get("EPISODE", "alaska")))
     a = ap.parse_args()
     items = [(scene, disp) for scene, lines in SCENES for disp, _ in lines]
     x = load(a.audio, a.tempo)
