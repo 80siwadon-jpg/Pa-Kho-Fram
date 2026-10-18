@@ -21,8 +21,8 @@ def hexc(h, a=1.0):
     return (int(h[0:2], 16) / 255, int(h[2:4], 16) / 255, int(h[4:6], 16) / 255, a)
 
 
-# พาเลตต์โทนฟิล์มเก่า: หมึกดำ + สีหม่น ๆ
-PAPER = hexc("#fefcf7")
+# พาเลตต์: หมึกดำ + สีพาสเทลหม่น ๆ
+PAPER = hexc("#ffffff")
 INK = hexc("#1b1916")
 WHITE = hexc("#ffffff")
 RED = hexc("#c8553d")
@@ -683,7 +683,7 @@ class Draw:
             self.circle(xx, yy, r, WHITE, 3, stroke=GREY)
 
     def ground(self, y, fill=WHITE, seed=141):
-        pts = [(-40, y)] + [(x, y + 10 * math.sin(x * 0.01 + seed)) for x in range(0, W + 41, 60)] + [(W + 40, y), (W + 40, H + 40), (-40, H + 40)]
+        pts = [(x, y + 10 * math.sin(x * 0.01 + seed)) for x in range(-400, W + 401, 60)] + [(W + 400, H + 3000), (-400, H + 3000)]
         self.poly(pts, fill, 8, seed=seed, amp=1.0)
 
     def sunburst(self, x, y, r0, r1, n=20, rot=0, lw=10, col=LGREY):

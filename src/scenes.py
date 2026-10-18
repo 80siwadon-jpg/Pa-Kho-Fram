@@ -1,6 +1,5 @@
 """ฉากทั้งหมด  แต่ละฟังก์ชันรับ (g, t, L, d)
 g = Draw, t = เวลาภายในฉาก, L = เวลาเริ่มของแต่ละบรรทัดพากย์ (ภายในฉาก), d = ความยาวฉาก
-CUES = เสียงประกอบ (บรรทัด, offset, ชื่อเสียง) ใช้เวลาเดียวกับแอนิเมชัน
 """
 import math
 
@@ -156,9 +155,9 @@ def s_title(g, t, L, d):
                 with g.at(0, -50):
                     g.face(56, "happy")
                 g.blob(0, -32, 10, 7, INK, 0, 2)
-            g.c.rectangle(0, GROUND + 60, W, 400)
+            g.c.rectangle(-400, GROUND + 60, W + 800, 800)
             g.fs(WHITE, 0)
-            g.line([(0, GROUND + 60), (W, GROUND + 60)], 8)
+            g.line([(-400, GROUND + 60), (W + 400, GROUND + 60)], 8)
 
 
 # ------------------------------------------------------------------ 3. russia
@@ -314,7 +313,7 @@ def s_laugh(g, t, L, d):
     show_crowd = 1 - e_io(seg(t, L[2] - 0.2, L[2] + 0.3))
     if show_crowd > 0:
         with g.at(0, 400 * (1 - show_crowd)):
-            crowd(g, t, "laugh", 0.0, GROUND + 130 if t < L[1] - 0.2 else GROUND + 220)
+            crowd(g, t, "laugh", 0.0, GROUND + 110)
             if t < L[1] - 0.2:
                 haha(g, t, [(200, 650, -12), (480, 560, 8), (760, 640, -5), (900, 500, 12), (340, 430, 4)], 0.2)
             else:
@@ -474,7 +473,7 @@ def s_twist(g, t, L, d):
         k = e_back(seg(t, L[3] - 0.2, L[3] + 0.3))
         op = e_out(seg(t, L[3] + 0.2, L[3] + 0.7))
         with g.alpha(k if k < 1 else 1):
-            g.c.rectangle(0, 0, W, H)
+            g.c.rectangle(-400, -400, W + 800, H + 800)
             g.c.set_source_rgba(*PAPER[:3], 0.85 * k)
             g.c.fill()
             g.sunburst(CX, 820, 240, 650, 22, t * 20, 16, GOLD2)
@@ -483,9 +482,11 @@ def s_twist(g, t, L, d):
             burst(g, CX, 800, t, L[3] + 0.6, 12, 300, 34)
     # คนหัวเราะ -> เงียบ (ด้านหน้า)
     if t < L[1] + 0.3 or True:
-        y = lerp(GROUND + 200, GROUND + 900, e_io(seg(t, L[1] - 0.2, L[1] + 0.3)))
-        if t < L[3] - 0.2:
-            crowd(g, t, "flat" if t < L[1] - 0.1 else "shock", -1, y)
+        y = GROUND + 110
+        fade = 1 - seg(t, L[1] - 0.2, L[1] + 0.2)
+        if fade > 0:
+            with g.alpha(fade):
+                crowd(g, t, "flat" if t < L[1] - 0.1 else "shock", -1, y)
             if t < L[1]:
                 g.bubble(CX, 760, 260, 150)
                 g.text("...", CX, 745, 96, "kanit", sc=pop(t, 0.3))
@@ -567,18 +568,3 @@ SCENES = {
 # ฉากที่ต่อกันไม่ต้องมีม่านวงกลม
 NO_IRIS = {("ceremony", "calendar")}
 
-CUES = {
-    "hook": [(0, 0.0, "tick"), (1, 1.0, "pop"), (2, -0.05, "flip"), (2, 0.9, "boing"), (3, 0.0, "scratch")],
-    "title": [(0, 0.05, "stamp"), (0, 0.6, "pop"), (0, 0.9, "pop"), (0, 1.5, "ding"),
-              (1, -0.35, "whoosh"), (1, 0.4, "pop"), (1, 1.0, "boing")],
-    "russia": [(0, 0.0, "pop"), (0, 0.3, "pop"), (1, 0.3, "sad"), (2, -0.1, "sneak"), (2, 0.4, "pop")],
-    "deal": [(0, 0.0, "whoosh"), (0, 0.85, "ding"), (0, 0.9, "stamp"), (1, 0.0, "drop"), (1, 0.25, "coins")],
-    "map": [(0, 0.0, "pop"), (0, 0.5, "coin"), (1, -0.1, "pop"), (1, 0.9, "pop"), (1, 1.1, "pop"), (1, 1.4, "pop"), (1, 1.7, "pop"), (1, 2.0, "ding")],
-    "laugh": [(0, 0.0, "laugh"), (1, -0.2, "spin"), (1, 0.5, "stamp"), (2, 0.0, "boing")],
-    "ceremony": [(0, 0.0, "drum"), (2, 0.0, "lower"), (3, -0.1, "boing"), (4, 0.0, "climb"),
-                 (5, -0.1, "fall"), (5, 0.55, "thud"), (6, 0.3, "faint")],
-    "calendar": [(0, 0.1, "fanfare"), (1, -0.4, "whoosh"), (2, 0.3, "flip"), (3, 0.3, "ding"), (3, 1.0, "stamp")],
-    "twist": [(0, 0.0, "scratch"), (1, 0.0, "gold"), (2, 0.3, "gush"), (3, 0.2, "reveal")],
-    "today": [(0, 0.1, "pop"), (0, 0.6, "ding"), (1, -0.2, "fanfare"), (1, 0.0, "party")],
-    "outro": [(0, 0.0, "laugh"), (1, 0.3, "reveal"), (2, 0.0, "pop"), (2, 0.3, "pop"), (3, 0.0, "pop"), (3, 1.2, "ding")],
-}
