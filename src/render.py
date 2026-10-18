@@ -79,7 +79,11 @@ def scene_at(tl, t):
 
 
 def draw_scene(g, s, t):
-    SCENES[s["name"]](g, t - s["start"], s["L"], s["end"] - s["start"])
+    lt, d = t - s["start"], s["end"] - s["start"]
+    z = 1 + 0.04 * e_io(min(max(lt / max(d, 0.1), 0), 1))   # กล้องค่อย ๆ ดันเข้า ภาพไม่นิ่งตาย
+    with g.at(W / 2, 800, z):
+        with g.at(-W / 2, -800):
+            SCENES[s["name"]](g, lt, s["L"], d)
 
 
 def render_frame(frame):
@@ -106,10 +110,14 @@ def render_frame(frame):
         ctx.paint()
         draw_scene(g, s, t)
         ctx.restore()
+        ctx.save()
+        ctx.rectangle(-W, -H, 3 * W, H + SUB_TOP - 20)   # เส้นม่านไม่ลงพื้นที่ซับ/พื้นที่ล่าง
+        ctx.clip()
         ctx.set_source_rgba(*INK)
         ctx.set_line_width(12)
         ctx.arc(W / 2, 860, r, 0, 2 * math.pi)
         ctx.stroke()
+        ctx.restore()
     else:
         draw_scene(g, s, t)
     header(g, t, tl)

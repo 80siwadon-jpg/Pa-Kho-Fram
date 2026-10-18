@@ -109,7 +109,8 @@ def s_cold_open(g, t, L, d):
             g.rrect(-260, -110, 520, 220, 50, WHITE, 9)
             g.text("ปกครอง 42 ปี", 0, -5, 96, "kanit", RED)
     if t > L[5] - 0.1:
-        g.text("?", CX + 300, 760, 220, "kanit", RED, sc=pop(t, L[5]), rot=10 * math.sin(t * 2))
+        g.text("?", CX + 300, 760 + 25 * math.sin(t * 3), 220, "kanit", RED,
+               sc=pop(t, L[5]) * (1 + 0.08 * math.sin(t * 5)), rot=14 * math.sin(t * 2.5))
     g.text("สิรต์, ลิเบีย", 220, 330, 56, "kanit", sc=pop(t, L[0] + 0.3) * (1 - seg(t, L[1], L[1] + 0.3)))
     g.text("20 ต.ค. 2011", 220, 260, 64, "kanit", RED, sc=pop(t, L[0]) * (1 - seg(t, L[1], L[1] + 0.3)))
 
@@ -183,7 +184,11 @@ def s_coup(g, t, L, d):
         else:
             jet(g, lerp(300, 1300, e_in(fly)), lerp(GROUND - 150, 300, e_in(fly)), 0.8, rot=-20)
         g.name_tag(t, 0.3, 330, 640, "กษัตริย์อิดริสที่ 1", "กษัตริย์องค์แรกและองค์เดียวของลิเบีย", dur=2.6)
-        g.text("ไปรักษาพระองค์", 760, 520, 52, "kanit", sc=pop(t, 2.6) * (1 - seg(t, L[1] - 0.6, L[1] - 0.3)))
+        k = pop(t, 2.6) * (1 - seg(t, L[1] - 0.6, L[1] - 0.3))
+        if k > 0:
+            with g.at(500, 470, k, -4):
+                g.rrect(-200, -55, 400, 110, 40, WHITE, 6)
+                g.text("ไปรักษาพระองค์", 0, -2, 56, "kanit")
     dim(g, 0.45 * night)
     if night > 0:
         g.circle(900, 330, 60, GOLD2, 6)
@@ -271,7 +276,7 @@ def s_dark(g, t, L, d):
         return
     # ล็อกเกอร์บี -> คว่ำบาตร
     k = e_out(seg(t, L[2] - 0.2, L[2] + 0.5))
-    with g.at(CX, 700, k, (1 - k) * 540 - 3):
+    with g.at(CX, 700 + 12 * math.sin(t * 1.5), k, (1 - k) * 540 - 3 + 2 * math.sin(t * 1.2)):
         g.rrect(-330, -250, 660, 500, 10, (0.97, 0.95, 0.89, 1), 8)
         g.text("WORLD NEWS · 1988", 0, -210, 32, "kanitr")
         g.line([(-300, -180), (300, -180)], 5)
@@ -281,7 +286,7 @@ def s_dark(g, t, L, d):
             g.line([(20, -20 + i * 32), (290 - (i % 3) * 40, -20 + i * 32)], 6, LGREY)
     if t > L[3] - 0.2:
         ks = pop(t, L[3])
-        with g.at(CX, 1080, ks, -10):
+        with g.at(CX, 1080, ks * (1 + 0.05 * math.sin(t * 6)), -10 + 3 * math.sin(t * 2)):
             g.rrect(-250, -70, 500, 140, 20, None, 10, stroke=RED)
             g.text("คว่ำบาตร", 0, 0, 96, "kanit", RED)
 
@@ -417,8 +422,8 @@ def s_lesson(g, t, L, d):
         for i in range(n):
             if grow * n < i:
                 break
-            bx = CX + fall * (i - 3) * 90 * (1 + i * 0.2)
-            by = GROUND - 40 - i * 95 + fall * (i * 95 - 10) + fall * fall * 60
+            bx = CX + fall * (i - 3) * 75
+            by = min(GROUND - 40 - i * 95 + fall * (i * 95 - 10) + fall * fall * 60, GROUND - 45)
             with g.at(bx, by, 1, fall * (i * 25 - 60)):
                 g.rrect(-130 + i * 8, -45, 260 - i * 16, 90, 10, [LGREY, GREY][i % 2], 7)
                 if i == 3:
