@@ -1,6 +1,7 @@
 """ไลบรารีวาดการ์ตูนลายเส้นหมึก (Cairo) + ตัวหนังสือไทย (PIL/raqm)"""
 import math
 import os
+import re
 from contextlib import contextmanager
 
 import cairo
@@ -10,7 +11,8 @@ from PIL import Image, ImageDraw, ImageFont
 W, H = 1080, 1920
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTS = {
-    "mali": os.path.join(ROOT, "assets/fonts/Mali-Bold.ttf"),
+    "kanitsb": os.path.join(ROOT, "assets/fonts/Kanit-SemiBold.ttf"),
+    "kanitm": os.path.join(ROOT, "assets/fonts/Kanit-Medium.ttf"),
     "kanit": os.path.join(ROOT, "assets/fonts/Kanit-Bold.ttf"),
     "kanitr": os.path.join(ROOT, "assets/fonts/Kanit-Regular.ttf"),
 }
@@ -41,6 +43,10 @@ MINT = hexc("#cfe3d7")
 PURPLE = hexc("#8a6a9a")
 MUSTARD = hexc("#d9a441")
 ICE = hexc("#cfe0ea")
+COAT = hexc("#33343d")
+TUNIC = hexc("#3e5a47")
+SKYBLUE = hexc("#8fb8de")
+HAIR = hexc("#6b4a33")
 
 
 # ---------------------------------------------------------------- easing
@@ -120,7 +126,7 @@ def _to_surface(img):
     return surf, bgra
 
 
-def text_sprite(s, size, fnt="mali", color=INK, stroke=0, stroke_color=PAPER, maxw=None, spacing=8):
+def text_sprite(s, size, fnt="kanitsb", color=INK, stroke=0, stroke_color=PAPER, maxw=None, spacing=8):
     key = (s, size, fnt, color, stroke, stroke_color, maxw)
     if key in _SPRITES:
         return _SPRITES[key]
@@ -149,19 +155,14 @@ def text_sprite(s, size, fnt="mali", color=INK, stroke=0, stroke_color=PAPER, ma
 
 
 def wrap(s, f, maxw):
+    """ตัดบรรทัดที่ช่องว่างหรือ zero-width space (\u200b จุดตัดที่มองไม่เห็น)
+    ถ้าไม่พอดีบรรทัดเดียว เลือกจุดตัดที่ทำให้ 2 บรรทัดยาวใกล้กันที่สุด"""
     tmp = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    words = s.split(" ")
-    lines, cur = [], ""
-    for wd in words:
-        cand = (cur + " " + wd).strip()
-        if tmp.textlength(cand, font=f) <= maxw or not cur:
-            cur = cand
-        else:
-            lines.append(cur)
-            cur = wd
-    if cur:
-        lines.append(cur)
-    return lines
+    parts = re.split("( |\u200b)", s)
+    if tmp.textlength(s, font=f) <= maxw or len(parts) == 1:
+        return [s]
+    cands = [("".join(parts[:i]), "".join(parts[i + 1:])) for i in range(1, len(parts), 2)]
+    return list(min(cands, key=lambda p: max(tmp.textlength(p[0], font=f), tmp.textlength(p[1], font=f))))
 
 
 # ---------------------------------------------------------------- drawer
@@ -170,7 +171,7 @@ class Draw:
         self.c = ctx
         self.t = t
         self.frame = frame
-        self.boil = frame // 5          # เส้นสั่นแบบวาดมือ 12 ครั้ง/วินาที
+        self.boil = 0   # ลายเส้นนิ่ง (ไม่สั่นแบบวาดมือ)
 
     # ---- state helpers
     @contextmanager
@@ -295,7 +296,7 @@ class Draw:
             q.append((x + math.cos(a) * rr, y + math.sin(a) * rr))
         self.poly(q, fill, lw, amp=0.5)
 
-    def text(self, s, x, y, size, fnt="mali", color=INK, sc=1.0, rot=0.0, a=1.0,
+    def text(self, s, x, y, size, fnt="kanitsb", color=INK, sc=1.0, rot=0.0, a=1.0,
              stroke=0, stroke_color=PAPER, maxw=None, anchor="c"):
         if sc <= 0.001 or a <= 0.001:
             return 0, 0
@@ -314,7 +315,7 @@ class Draw:
         return w * sc, h * sc
 
     # ---- faces & characters (origin = กลางหัว สำหรับ face, ปลายเท้า สำหรับตัวละคร)
-    def face(self, R, mood="happy", look=(0, 0), seed=0):
+    def face(self, R, mood="happy", look=(0, 0), seed=0, mouth_dy=0.0):
         t = self.t
         ex, ey, er = R * 0.36, -R * 0.02, R * 0.11
         lx, ly = look[0] * R * 0.06, look[1] * R * 0.06
@@ -360,7 +361,7 @@ class Draw:
             self.circle(0, 0, R * 0.14, BLUSH, 0)
             self.c.restore()
         # mouth
-        my = R * 0.30
+        my = R * 0.30 + mouth_dy
         if mood in ("happy", "smug"):
             self.arc(0, my - R * 0.1, R * 0.16, 25, 155, lw)
         elif mood == "think":
@@ -475,18 +476,74 @@ class Draw:
             for i in range(3):
                 self.line([(-38 + i * 38, -412), (-38 + i * 38, -340)], 9, RED, amp=0.6)
 
-    def seward(self, x, y, sc=1.0, mood="happy", rot=0, seed=41):
+    def seward(self, x, y, sc=1.0, mood="happy", rot=0, seed=41, arm=0.0):
+        """วิลเลียม เอช. ซิวเวิร์ด: จมูกโด่งงุ้มใหญ่ ผมขาวฟูกระเซิง คิ้วดก คอเสื้อขาวตั้ง โบว์ดำ เสื้อโค้ตยาวสีเข้ม"""
         with self.at(x, y, sc, rot):
-            self.blob(0, -95, 82, 98, NAVY, 7, seed)
-            self.poly([(-28, -190), (28, -190), (0, -140)], WHITE, 5)
-            self.poly([(-30, -180), (0, -168), (30, -180), (30, -150), (0, -162), (-30, -150)], INK, 0)
+            for sx in (-1, 1):   # ขา + รองเท้า
+                self.rrect(sx * 22 - 13, -70, 26, 70, 8, COAT, 6)
+                self.blob(sx * 26, -6, 26, 12, INK, 0, seed + sx)
+            self.line([(68, -175), (95 + 25 * arm, -110 - 120 * arm)], 15)        # แขน
+            self.line([(-68, -175), (-92, -105)], 15)
+            self.poly([(-78, -195), (78, -195), (92, -55), (40, -40), (0, -70), (-40, -40), (-92, -55)],
+                      COAT, 7, seed=seed, smooth=True)                              # โค้ตหางยาว
+            self.poly([(-30, -200), (30, -200), (14, -100), (-14, -100)], WHITE, 5, seed=seed + 1)
+            for sx in (-1, 1):   # ผมขาวฟูข้างหู
+                self.poly([(sx * 58, -330), (sx * 98, -322), (sx * 86, -300), (sx * 112, -286), (sx * 90, -268),
+                           (sx * 104, -246), (sx * 72, -240)], WHITE, 6, seed=seed + 4 + sx, smooth=True)
+            self.blob(0, -275, 76, 86, SKIN, 7, seed + 7)
+            self.poly([(-50, -340), (-30, -372), (-6, -352), (10, -380), (26, -354), (52, -366), (56, -334)],
+                      WHITE, 6, seed=seed + 8, smooth=True)                         # ปอยผมกระเซิงบนหัว
+            self.poly([(-5, -268), (7, -268), (30, -240), (26, -226), (6, -226), (-4, -238)],
+                      SKIN, 6, seed=seed + 11, smooth=True)                         # จมูกโด่งงุ้ม
+            with self.at(0, -282):
+                self.face(70, mood, seed=seed, mouth_dy=40)
+            for sx in (-1, 1):   # ปกคอเสื้อขาวตั้งสูง
+                self.poly([(sx * 4, -186), (sx * 46, -204), (sx * 40, -166)], WHITE, 5, seed=seed + 2 + sx)
+            self.poly([(-40, -184), (0, -172), (40, -184), (40, -156), (0, -168), (-40, -156)], INK, 0)  # โบว์ใหญ่
+            self.circle(0, -170, 9, INK, 0)
+            for sx in (-1, 1):   # คิ้วดก
+                self.poly([(sx * 10, -306), (sx * 42, -318), (sx * 50, -304), (sx * 14, -296)], LGREY, 4, seed=seed + 9 + sx)
+
+    def tsar(self, x, y, sc=1.0, mood="happy", rot=0, seed=141, pockets=0.0, arm=0.0):
+        """พระเจ้าซาร์อเล็กซานเดอร์ที่ 2: หนวดใหญ่ต่อจอนยาว ผมเถิก เครื่องแบบทหารเขียวเข้ม อินทรธนูทอง สายสะพายฟ้า"""
+        with self.at(x, y, sc, rot):
             for sx in (-1, 1):
-                self.blob(sx * 80, -250, 30, 46, LGREY, 6, seed + sx)
-            self.blob(0, -250, 82, 88, SKIN, 7, seed + 3)
-            self.blob(0, -330, 50, 14, LGREY, 5, seed + 4)
-            with self.at(0, -255):
-                self.face(74, mood, seed=seed)
-            self.blob(0, -238, 16, 26, SKIN, 5, seed + 5)
+                self.rrect(sx * 24 - 15, -75, 30, 75, 8, NAVY, 6)
+                self.line([(sx * 24, -70), (sx * 24, -8)], 4, RED, amp=0)
+                self.blob(sx * 28, -6, 28, 13, INK, 0, seed + sx)
+            if pockets > 0:
+                for sx in (-1, 1):
+                    with self.at(sx * 82, -80, pockets):
+                        self.blob(sx * 14, 0, 24, 30, WHITE, 6, seed + 3 + sx)
+            self.line([(74, -180), (98 + 20 * arm, -105 - 110 * arm)], 16, TUNIC)
+            self.line([(-74, -180), (-98, -105)], 16, TUNIC)
+            self.rrect(-80, -205, 160, 140, 34, TUNIC, 7, seed=seed)
+            self.poly([(-70, -195), (-48, -200), (72, -92), (58, -76)], SKYBLUE, 0)   # สายสะพาย
+            for i in range(4):
+                self.circle(-6, -180 + i * 28, 6, GOLD, 3)
+            self.star(-40, -150, 12, GOLD, 3)
+            for sx in (-1, 1):   # อินทรธนูทองพร้อมพู่
+                self.blob(sx * 76, -200, 32, 14, GOLD, 5, seed + 5 + sx)
+                for k in range(4):
+                    self.line([(sx * (58 + k * 11), -190), (sx * (58 + k * 11), -172)], 4, GOLD, amp=0)
+            self.rrect(-34, -222, 68, 26, 8, RED, 5)                                   # คอตั้งแดง
+            self.line([(-30, -200), (30, -200)], 4, GOLD, amp=0)
+            self.blob(0, -290, 78, 84, SKIN, 7, seed + 7)
+            self.c.move_to(-74, -300)                                                   # ผมเถิกหวีข้าง
+            self.c.curve_to(-70, -380, 66, -380, 74, -300)
+            self.c.curve_to(50, -350, -10, -362, -40, -322)
+            self.c.curve_to(-55, -320, -68, -310, -74, -300)
+            self.c.close_path()
+            self.fs(HAIR, 6)
+            with self.at(0, -290):
+                self.face(70, mood, seed=seed)
+            for sx in (-1, 1):   # จอนยาวลงมาต่อหนวด
+                self.poly([(sx * 66, -318), (sx * 84, -282), (sx * 78, -236), (sx * 44, -238), (sx * 56, -280)],
+                          HAIR, 5, seed=seed + 9 + sx, smooth=True)
+            self.poly([(-66, -246), (-30, -262), (0, -254), (30, -262), (66, -246), (88, -262), (74, -230),
+                       (30, -238), (0, -244), (-30, -238), (-74, -230), (-88, -262)],
+                      HAIR, 5, seed=seed + 12, smooth=True)                             # หนวดใหญ่ปลายงอน
+            self.blob(0, -268, 11, 9, SKIN, 4, seed + 13)
 
     def lion(self, x, y, sc=1.0, mood="think", rot=0, seed=51):
         with self.at(x, y, sc, rot):
@@ -519,14 +576,49 @@ class Draw:
                 self.line([(-28, -110), (-40, -150), (-20 - 0 * salute, -175)], 8)
 
     def lady(self, x, y, sc=1.0, rot=0, mood="happy", seed=71):
+        """สุภาพสตรียุค 1860: กระโปรงสุ่มบาน ผมแสกกลางเกล้ามวยต่ำ"""
         with self.at(x, y, sc, rot):
-            self.poly([(-30, -150), (30, -150), (85, 0), (-85, 0)], PURPLE, 7, seed=seed, smooth=False)
+            self.c.move_to(-28, -150)
+            self.c.curve_to(-70, -100, -120, -30, -115, 0)
+            self.c.line_to(115, 0)
+            self.c.curve_to(120, -30, 70, -100, 28, -150)
+            self.c.close_path()
+            self.fs(PURPLE, 7)
+            for k in range(3):
+                self.arc(0, -150 + 50 * (k + 1) - 600, 600, 84, 96, 4, LGREY)
             self.line([(-25, -140), (-60, -90)], 10)
             self.line([(25, -140), (60, -90)], 10)
-            self.circle(0, -205, 54, SKIN, 7)
-            self.blob(0, -268, 34, 26, BROWN, 6, seed + 1)
-            with self.at(0, -205):
-                self.face(50, mood, seed=seed)
+            self.rrect(-30, -175, 60, 40, 14, PURPLE, 6)
+            for sx in (-1, 1):
+                self.blob(sx * 42, -232, 22, 30, HAIR, 5, seed + sx)
+            self.circle(0, -205, 52, SKIN, 7)
+            self.c.move_to(-52, -210)
+            self.c.curve_to(-50, -270, 50, -270, 52, -210)
+            self.c.curve_to(30, -250, 4, -252, 0, -238)
+            self.c.curve_to(-4, -252, -30, -250, -52, -210)
+            self.c.close_path()
+            self.fs(HAIR, 5)
+            with self.at(0, -200):
+                self.face(48, mood, seed=seed)
+
+    def name_tag(self, t, t0, x, y, name, role, dur=3.2, side=1):
+        """ป้ายชื่อตัวละคร แสดงครั้งแรกที่ปรากฏตัว: เด้งขึ้น ค้างไว้ แล้วจางหาย"""
+        if t < t0 or t > t0 + dur:
+            return
+        k = pop(t, t0, 0.35)
+        a = min(1.0, (t0 + dur - t) / 0.35)
+        _, _, w1, _ = text_sprite(name, 50, "kanit")
+        _, _, w2, _ = text_sprite(role, 36, "kanitm", GREY)
+        w = max(w1, w2) + 40
+        with self.alpha(a):
+            with self.at(x, y, k):
+                self.rrect(-w / 2, -66, w, 132, 28, WHITE, 6)
+                self.poly([(-side * 30, 64), (side * 10, 64), (-side * 50, 102)], WHITE, 0)
+                self.line([(-side * 30, 67), (-side * 50, 102), (side * 10, 67)], 6)
+                self.c.rectangle(-w / 2 + 3, -66 + 3, 9, 126)
+                self.fs(RED, 0)
+                self.text(name, 6, -22, 50, "kanit")
+                self.text(role, 6, 34, 36, "kanitm", GREY)
 
     def person(self, x, y, sc=1.0, mood="laugh", hat="top", seed=81, mustache=True, col=GREY):
         with self.at(x, y, sc):

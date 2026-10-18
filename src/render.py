@@ -22,8 +22,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, "build")
 FPS = 60
 IRIS = 0.35
-SUB_Y = 1470
-SUB_SIZE = 86
+SUB_TOP = 1400   # ขอบบนของซับ (ซับหลายบรรทัดขยายลงล่าง ไม่ทับภาพ)
+SUB_SIZE = 80
 # ย่อทุกอย่างเข้าด้านบน เว้นพื้นที่ล่าง ~25% และขอบขวาให้ชื่อ/คำอธิบาย/ปุ่มของแพลตฟอร์ม
 SAFE_SCALE = 0.8
 SAFE_TOP = 60
@@ -58,10 +58,10 @@ def subtitles(g, t, tl):
         end = min(ln["end"] + 0.3, nxt - 0.02)
         if ln["start"] - 0.05 <= t < end:
             k = e_back(min((t - ln["start"] + 0.05) / 0.18, 1), 2.4)
-            _, _, sw, _ = text_sprite(ln["text"], SUB_SIZE, "mali", INK, 14, PAPER, 1000)
-            fit = min(1.0, 1040 / sw)   # บรรทัดไทยไม่มีเว้นวรรค ตัดคำไม่ได้ -> ย่อให้พอดี
-            g.text(ln["text"], W / 2, SUB_Y, SUB_SIZE, "mali", INK, sc=(0.85 + 0.15 * k) * fit,
-                   stroke=14, stroke_color=PAPER, maxw=1000)
+            _, _, sw, sh = text_sprite(ln["text"], SUB_SIZE, "kanitsb", INK, 0, PAPER, 1000)
+            fit = min(1.0, 1060 / sw)   # บรรทัดไทยไม่มีเว้นวรรค ตัดคำไม่ได้ -> ย่อให้พอดี
+            g.text(ln["text"], W / 2, SUB_TOP + sh * fit / 2, SUB_SIZE, "kanitsb", INK,
+                   sc=(0.85 + 0.15 * k) * fit, maxw=1000)
             return
 
 

@@ -3,7 +3,7 @@ g = Draw, t = เวลาภายในฉาก, L = เวลาเริ่
 """
 import math
 
-from gfx import (ALASKA, BLUE, BROWN, BROWN2, GOLD, GOLD2, GREY, H, INK, LGREY, MINT, NAVY, PAPER, RED, SKIN,
+from gfx import (ALASKA, BLUE, BROWN, BROWN2, COAT, TUNIC, GOLD, GOLD2, GREY, H, INK, LGREY, MINT, NAVY, PAPER, RED, SKIN,
                  THAILAND, WHITE, W, e_back, e_in, e_io, e_out, hn, lerp, poly_area, pop, seg, spring)
 
 CX = W / 2
@@ -173,8 +173,8 @@ def s_russia(g, t, L, d):
         g.flag(-40, -170, 110, 70, "ru", t, 0.6)
         g.text("อลาสกา", 0, 175, 52, "kanit")
     g.ground(GROUND + 40, WHITE)
-    g.bear(bx, GROUND + 60, pop(t, 0.0, 0.45) * 1.15, mood, pockets=pop(t, L[1] + 0.3))
-    g.text("รัสเซีย", bx, GROUND + 140, 56, "kanit", sc=pop(t, 0.5), stroke=8)
+    g.tsar(bx, GROUND + 60, pop(t, 0.0, 0.45) * 1.1, mood, pockets=pop(t, L[1] + 0.3))
+    g.name_tag(t, 0.4, 380, 640, "พระเจ้าซาร์อเล็กซานเดอร์ที่ 2", "จักรพรรดิรัสเซีย", dur=L[1] - 0.2)
     # กระเป๋าว่าง: แมลงเม่าบินออก + เหรียญ 0
     if t > L[1] + 0.4:
         tt = t - L[1] - 0.4
@@ -208,15 +208,16 @@ def s_deal(g, t, L, d):
     # มือจับกัน
     hx = CX + 0 * hand
     if hand > 0:
-        g.line([(bx + 85, GROUND - 120), (lerp(bx + 120, hx - 10, hand), lerp(GROUND - 110, 900, hand))], 20)
-        g.line([(sx - 60, GROUND - 120), (lerp(sx - 90, hx + 10, hand), lerp(GROUND - 110, 900, hand))], 16, BLUE)
+        g.line([(bx + 85, GROUND - 120), (lerp(bx + 120, hx - 10, hand), lerp(GROUND - 110, 900, hand))], 17, TUNIC)
+        g.line([(sx - 60, GROUND - 120), (lerp(sx - 90, hx + 10, hand), lerp(GROUND - 110, 900, hand))], 16, COAT)
         g.circle(hx, 900 + 6 * math.sin(t * 25) * (t < 1.6), 30, SKIN, 7)
-    g.bear(bx, GROUND + 60, 1.05, "happy" if t < L[1] else "laugh")
-    g.sam(sx, GROUND + 60, 1.05, "happy")
+    g.tsar(bx, GROUND + 60, 1.0, "happy" if t < L[1] else "laugh")
+    g.seward(sx, GROUND + 60, 1.0, "happy")
+    g.name_tag(t, 0.6, sx - 60, 560, "วิลเลียม ซิวเวิร์ด", "รัฐมนตรีต่างประเทศสหรัฐฯ", dur=L[1] - 0.8, side=-1)
     burst(g, hx, 900, t, 0.85, 10, 180, 30)
     if t < L[1]:
         g.text("ดีล!", hx, 760, 100, "kanit", sc=pop(t, 0.9), rot=-8, color=RED, stroke=10)
-    # แผนที่ลอยจากหมีไปแซม
+    # แผนที่ลอยจากซาร์ไปซิวเวิร์ด
     mk = e_io(seg(t, 0.9, 1.7))
     with g.at(lerp(bx, sx, mk), 520 - 120 * math.sin(mk * math.pi), pop(t, 0.2) * 0.9):
         g.shape(ALASKA, 0, 0, 250, ICE_FILL, 6)
@@ -388,11 +389,12 @@ def s_ceremony(g, t, L, d):
         k = e_out(seg(t, L[6] - 0.5, L[6] - 0.1))
         faint = e_in(seg(t, L[6] + 0.3, L[6] + 0.9))
         lx = lerp(1250, 930, k)
-        g.lady(lx, 1340, 0.95, -82 * faint, "shock" if faint < 0.5 else "dizzy")
+        g.lady(lx, 1290, 0.95, -82 * faint, "shock" if faint < 0.5 else "dizzy")
+        g.name_tag(t, L[6] - 0.3, 760, 1000, "เจ้าหญิงมาเรีย มักซูโตวา", "ภรรยาผู้ว่าการอลาสกา", dur=2.6)
         if faint >= 1:
             for i in range(3):
                 a = t * 4 + i * 2.1
-                g.star(lx - 210 + math.cos(a) * 60, 1280 + math.sin(a) * 22, 18, GOLD2, 4)
+                g.star(lx - 210 + math.cos(a) * 60, 1230 + math.sin(a) * 22, 18, GOLD2, 4)
 
 
 # ------------------------------------------------------------------ 8. calendar
@@ -403,7 +405,7 @@ def s_calendar(g, t, L, d):
         with g.at(0, 1500 * pan):
             ceremony_bg(g, t, None, 0, lerp(GROUND - 200, 340, rise))
             soldiers(g, t, e_out(seg(t, 0.4, 0.8)), 1.0)
-            g.lady(930, 1340, 0.95, -82, "dizzy")
+            g.lady(930, 1290, 0.95, -82, "dizzy")
             burst(g, CX + 150, 400, t, L[1] - 0.6, 12, 200, 28)
     if pan > 0:
         with g.at(0, -1500 * (1 - pan)):
@@ -515,7 +517,7 @@ def s_today(g, t, L, d):
             g.text("วันอลาสกา  18 ต.ค.", 0, 0, 74, "kanit", WHITE)
         confetti(g, t, 70, t0=L[1])
     dance = math.sin(t * 8)
-    g.bear(230, 1350, 0.72 * pop(t, 1.0), "laugh", rot=6 * dance)
+    g.seward(230, 1350, 0.72 * pop(t, 1.0), "laugh", rot=6 * dance)
     g.kid(CX, 1350, 0.72 * pop(t, 1.2), "laugh", rot=-6 * dance, hat="party", arms="up")
     g.sam(850, 1350, 0.72 * pop(t, 1.4), "laugh", rot=6 * dance, arm=0.5 + 0.5 * dance)
 
@@ -525,14 +527,14 @@ def s_outro(g, t, L, d):
     a = 1 - e_io(seg(t, L[2] - 0.3, L[2] + 0.1))
     if a > 0:
         with g.alpha(a):
-            crowd(g, t, "laugh", 0.0, 900, 0.7)
-            with g.at(CX, 1010):
+            crowd(g, t, "laugh", 0.0, 820, 0.7)
+            with g.at(CX, 930):
                 g.line([(-260, 0), (260, 0)], 10)
                 g.poly([(240, -30), (290, 0), (240, 30)], INK, 6)
             # หีบสมบัติ
             cs = pop(t, L[1])
             op = e_out(seg(t, L[1] + 0.3, L[1] + 0.8))
-            with g.at(CX, 1300, cs):
+            with g.at(CX, 1190, cs):
                 if op > 0:
                     g.sunburst(0, -120, 120, 330, 14, t * 30, 12, GOLD2)
                 g.rrect(-170, -120, 340, 160, 18, BROWN2, 8)
@@ -542,7 +544,7 @@ def s_outro(g, t, L, d):
                     for i in range(5):
                         g.coin(-110 + i * 55, -140 - 30 * math.sin(i), 30, "$", t * 100 + i * 40)
                 g.rrect(-25, -95, 50, 60, 10, GOLD, 6)
-            burst(g, CX, 1200, t, L[1] + 0.5, 12, 280, 30)
+            burst(g, CX, 1090, t, L[1] + 0.5, 12, 280, 30)
     if t > L[2] - 0.2:
         g.kid(290, 1330, 0.9 * pop(t, L[2] - 0.2), "think", arms="chin")
         g.text("?", 520, 720, 260, "kanit", sc=pop(t, L[2]), rot=10 * math.sin(t * 3), color=RED, stroke=12)

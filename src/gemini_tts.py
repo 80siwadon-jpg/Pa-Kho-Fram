@@ -104,7 +104,7 @@ def speak(text, models, voice_name, key, cache):
 
 
 def clean(s):
-    return s.replace("...", "").replace('"', "")
+    return s.replace("...", "").replace('"', "").replace("\u200b", "")
 
 
 def main():
