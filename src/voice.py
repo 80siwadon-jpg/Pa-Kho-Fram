@@ -56,24 +56,57 @@ def speech_runs(x, min_gap=0.18):
         elif (r[1] - r[0]) * HOP >= 0.06:
             merged.append(r)
     pad = int(0.04 * SR)
-    return [(max(a * hop - pad, 0), min(b * hop + pad, len(x))) for a, b in merged]
+    out = []
+    for a, b in merged:   # เผื่อขอบ 40ms แต่ไม่ให้ทับช่วงก่อนหน้า
+        a = max(a * hop - pad, out[-1][1] if out else 0)
+        out.append((a, min(b * hop + pad, len(x))))
+    return out
 
 
-def split_lines(x, runs, n_lines, keep_gap=0.15):
-    if len(runs) < n_lines:
-        sys.exit(f"เจอช่วงพูด {len(runs)} ช่วง แต่บทมี {n_lines} บรรทัด — เว้นจังหวะระหว่างบรรทัดให้ชัดขึ้นนะ")
-    gaps = [runs[i + 1][0] - runs[i][1] for i in range(len(runs) - 1)]
-    cut = set(sorted(np.argsort(gaps)[::-1][: n_lines - 1]))
-    lines, cur = [], []
-    keep = np.zeros(int(keep_gap * SR), np.float32)
-    for i, (a, b) in enumerate(runs):
-        if cur:
-            cur.append(keep)     # ช่องเงียบภายในบรรทัด -> สั้นลง
-        cur.append(x[a:b])
-        if i in cut or i == len(runs) - 1:
-            lines.append(np.concatenate(cur))
-            cur = []
+def split_lines(x, runs, weights, keep_gap=0.15):
+    """จัดช่วงพูด (runs) เป็นบรรทัดตามบท ด้วย dynamic programming:
+    ความยาวแต่ละบรรทัดควรใกล้สัดส่วนจำนวนตัวอักษร และควรตัดตรงช่วงหยุดยาว"""
+    n, m = len(weights), len(runs)
+    if m < n:
+        sys.exit(f"เจอช่วงพูด {m} ช่วง แต่บทมี {n} บรรทัด — เว้นจังหวะระหว่างบรรทัดให้ชัดขึ้นนะ")
+    dur = np.array([(b - a) / SR for a, b in runs])
+    gap = np.array([(runs[i + 1][0] - runs[i][1]) / SR for i in range(m - 1)] + [0.0])
+    csum = np.concatenate([[0], np.cumsum(dur)])
+    w = np.asarray(weights, float)
+    exp = csum[-1] * w / w.sum()
+    INF = 1e18
+    cost = np.full((n + 1, m + 1), INF)
+    back = np.zeros((n + 1, m + 1), int)
+    cost[0, 0] = 0
+    for k in range(1, n + 1):
+        for j in range(k, m - (n - k) + 1):          # บรรทัด k จบที่ run j-1
+            for i in range(k - 1, j):                 # เริ่มที่ run i
+                if cost[k - 1, i] >= INF:
+                    continue
+                d = csum[j] - csum[i]
+                c = cost[k - 1, i] + (d - exp[k - 1]) ** 2 / exp[k - 1] - 4.0 * gap[j - 1] * (k < n)
+                if c < cost[k, j]:
+                    cost[k, j], back[k, j] = c, i
+    bounds, j = [], m
+    for k in range(n, 0, -1):
+        i = back[k, j]
+        bounds.append((i, j))
+        j = i
+    lines = []
+    for i, j in reversed(bounds):
+        parts = []
+        for r in range(i, j):
+            if parts:   # ช่องเงียบภายในบรรทัด: ย่อให้ไม่เกิน keep_gap (ไม่ยืด)
+                parts.append(np.zeros(int(min(gap[r - 1], keep_gap) * SR), np.float32))
+            parts.append(x[runs[r][0]:runs[r][1]])
+        lines.append(np.concatenate(parts))
     return lines
+
+
+def weight(text):
+    """น้ำหนักความยาวพูดโดยประมาณ: ตัวอักษรไทยที่ไม่ใช่สระบน/ล่าง/วรรณยุกต์ + ตัวเลขนับหนักกว่า"""
+    marks = set("\u0e31\u0e34\u0e35\u0e36\u0e37\u0e38\u0e39\u0e3a\u0e47\u0e48\u0e49\u0e4a\u0e4b\u0e4c\u0e4d")
+    return sum(3 if c.isdigit() else 1 for c in text if c not in marks and not c.isspace() and c not in '."?!')
 
 
 def main():
@@ -86,7 +119,7 @@ def main():
     items = [(scene, disp) for scene, lines in SCENES for disp, _ in lines]
     x = load(a.audio, a.tempo)
     runs = speech_runs(x)
-    lines = split_lines(x, runs, len(items))
+    lines = split_lines(x, runs, [weight(d) for _, d in items])
     for (scene, disp), y in zip(items, lines):
         print(f"{len(y) / SR:5.2f}s  {disp}")
     timeline.build([(s, d, y) for (s, d), y in zip(items, lines)], a.out, a.gap, a.gap + 0.15)
