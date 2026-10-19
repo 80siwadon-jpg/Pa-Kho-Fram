@@ -31,7 +31,7 @@ class Look:
     jowls: float = 0.0             # แก้มย้อย (นิกสัน)
     nose: float = 1.0              # ความยาว/ขนาดจมูก
     brow: float = 1.0              # ความหนาคิ้ว
-    glasses: str = ""              # "" / thick / thin / shades (แว่นดำ)
+    glasses: str = ""              # "" / thick / thin / round (กรอบกลมหนา) / shades (แว่นดำ)
     stubble: float = 0.0
     age: float = 0.5               # ริ้วรอย
     build: float = 1.0             # ความกว้างลำตัว
@@ -326,10 +326,14 @@ def head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw
             _stroke(c, [(ex - 14, ey - 8), (ex - 4, ey - 10)], 3, WHITE, 0.5)
         _stroke(c, [(-w * 0.38 + fx + 26, ey - 10), (w * 0.38 + fx - 26, ey - 10)], 5, INK, smooth=False)
     elif look.glasses:
-        th = 6 if look.glasses == "thick" else 3
+        th = 6 if look.glasses in ("thick", "round") else 3
         for sx in (-1, 1):
             ex = sx * w * 0.38 + fx
-            _rr(c, ex - 24, ey - 17, 48, 32, 10)
+            if look.glasses == "round":   # กรอบกลมหนา (ซาร์ตร์)
+                c.new_path()
+                c.arc(ex, ey - 1, 22, 0, 2 * math.pi)
+            else:
+                _rr(c, ex - 24, ey - 17, 48, 32, 10)
             c.set_source_rgba(0.85, 0.92, 0.97, 0.18)
             c.fill_preserve()
             c.set_source_rgba(*INK)
