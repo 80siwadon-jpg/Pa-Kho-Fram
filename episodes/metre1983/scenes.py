@@ -36,7 +36,7 @@ def earth(g, x, y, r, t=0.0):
     c.arc(x, y, r, 0, 2 * math.pi)
     c.clip()
     for i in range(5):
-        cx = x + ((i * 0.37 + t * 0.03) % 1 * 2.4 - 1.2) * r
+        cx = x + ((i * 0.37 + t * 0.1) % 1 * 2.4 - 1.2) * r
         g.blob(cx, y + (hn(i, 7) - 0.5) * r * 1.2, r * 0.32, r * 0.22, GREEN, 0, 3 + i)
     c.restore()
     c.new_path()
@@ -98,6 +98,9 @@ def s_hook(g, t, L, d):
         return
     if t < L[2] - 0.2:   # 1 เมตรของคนทั้งโลก
         earth(g, CX, 800, 260, t)
+        for i in range(5):
+            a = t * 0.9 + i * 1.26
+            g.sparkle(CX + 340 * math.cos(a), 800 + 300 * math.sin(a), 16, GOLD2)
         ruler(g, CX, 1140, 640, ap(t, L[1] + 0.4), label="1 เมตร")
         g.label("1 เมตรของคนทั้งโลก", CX, 380, 80, sc=ap(t, L[1]), rot=-3)
         return
@@ -359,14 +362,14 @@ def s_impact(g, t, L, d):
     if t < L[6] - 0.2:   # รากฐานความแม่นยำ
         earth(g, CX, 820, 230, t)
         stopwatch(g, CX + 300, 560, 80, (t * 2) % 1)
-        g.label("รากฐานของโลกยุคใหม่", CX, 380, 74, sc=ap(t, L[5]), rot=-3)
+        g.label("แม่นยำระดับเสี้ยววินาที", CX, 380, 74, sc=ap(t, L[5]), rot=-3)
         return
     if t < L[7] - 0.2:   # GPS + อินเทอร์เน็ต
         if not photo(g, "gps", CX, 780, 860, 560, -2, ap(t, L[6]), 1.04, label="ดาวเทียม GPS"):
             space_panel(g)
             stars(g, t, 16)
             earth(g, CX, 1030, 190, t)
-            satellite(g, CX, 560, 0.8, 8 * math.sin(t), t)
+            satellite(g, CX + 220 * math.sin(t * 0.6), 560 + 40 * math.cos(t * 0.6), 0.8, 8 * math.sin(t), t)
             with g.at(860, 1120, ap(t, L[6] + 0.6)):
                 g.c.new_path()
                 g.c.move_to(0, 60)
@@ -374,7 +377,7 @@ def s_impact(g, t, L, d):
                 g.c.curve_to(40, -80, 70, -10, 0, 60)
                 _shade(g.c, RED, 5, 0.2)
                 g.circle(0, -30, 18, WHITE, 0)
-        g.label("GPS · อินเทอร์เน็ต", CX, 380, 84, color=BLUE, sc=ap(t, L[6]), rot=-3)
+        g.label("รากฐานของ GPS · อินเทอร์เน็ต", CX, 380, 70, color=BLUE, sc=ap(t, L[6]), rot=-3)
         return
     space_panel(g)   # ยานลงจอดบนดาวดวงอื่น
     stars(g, t)
@@ -393,7 +396,9 @@ def s_lesson(g, t, L, d):
     g.ground(GROUND, WHITE)
     g.label("บทเรียน", CX, 340, 100, sc=ap(t, 0.2), rot=-3)
     if t < L[2] - 0.2:   # เรื่องธรรมดาในชีวิตประจำวัน
-        ruler(g, CX, 800, 700, ap(t, 0.4), label="1 เมตร")
+        ruler(g, CX, 800 + 14 * math.sin(t * 2), 700, ap(t, 0.4), 3 * math.sin(t * 1.3), label="1 เมตร")
+        for i in range(4):
+            g.sparkle(CX - 380 + i * 250, 640 + 30 * math.sin(t * 3 + i), 14 + 4 * math.sin(t * 5 + i), GOLD2)
         if t > L[1] - 0.2:
             g.label("เรื่องธรรมดาที่สุด", CX, 1000, 62, color=GREY, sc=ap(t, L[1]))
         return
