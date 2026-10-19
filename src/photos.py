@@ -53,7 +53,14 @@ def fetch():
     spec = json.load(open(os.path.join(ROOT, "episodes", EP, "photos.json"), encoding="utf-8"))
     os.makedirs(DIR, exist_ok=True)
     credits = {}
+    old = {}
+    if os.path.exists(os.path.join(DIR, "credits.json")):
+        old = json.load(open(os.path.join(DIR, "credits.json"), encoding="utf-8"))
     for item in spec:
+        if os.path.exists(os.path.join(DIR, item["id"] + ".jpg")):   # มีไฟล์แล้ว (โหลดไว้ก่อน/เจ้าของช่องใส่เอง)
+            credits[item["id"]] = old.get(item["id"]) or {"artist": item.get("credit", ""), "license": item.get("license", "")}
+            print(f"= {item['id']}: มีไฟล์อยู่แล้ว")
+            continue
         cands = ([item["file"]] if item.get("file") else []) + (_search(item["search"]) if item.get("search") else [])
         for title in cands:
             info = _info(title)
@@ -82,6 +89,21 @@ def _load(pid):
             surf, buf = _to_surface(im)   # buf ต้องอยู่คู่ surface (ข้อมูลภาพจริง)
             _cache[pid] = (surf, im.width, im.height, buf)
     return _cache[pid]
+
+
+_spec = None
+
+
+def portrait(name):
+    """id ภาพจริงของบุคคลตามชื่อในป้ายชื่อ (photos.json: "tag") — ใช้โดย Draw.name_tag"""
+    global _spec
+    if _spec is None:
+        p = os.path.join(ROOT, "episodes", EP, "photos.json")
+        _spec = json.load(open(p, encoding="utf-8")) if os.path.exists(p) else []
+    for item in _spec:
+        if item.get("tag") == name and _load(item["id"]) is not None:
+            return item["id"]
+    return None
 
 
 def credit(pid):

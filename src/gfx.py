@@ -653,6 +653,13 @@ class Draw:
             return
         k = pop(t, t0, 0.35)
         a = min(1.0, (t0 + dur - t) / 0.35)
+        import photos   # ภาพจริงของบุคคล (ถ้ามีใน photos.json "tag") ขึ้นเหนือป้ายชื่อ
+        pid = photos.portrait(name)
+        if pid:
+            px = min(max(x, 230), 850)
+            py = max(y - 330, 450)
+            with self.alpha(a):
+                photos.photo(self, pid, px, py, 300, 360, -4 * side, pop(t, t0 + 0.15, 0.4), 1.0 + 0.03 * (t - t0))
         _, _, w1, _ = text_sprite(name, 50, "kanit")
         _, _, w2, _ = text_sprite(role, 36, "kanitm", GREY)
         w = max(w1, w2) + 40

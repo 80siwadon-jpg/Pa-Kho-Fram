@@ -71,8 +71,6 @@ def s_hook(g, t, L, d):
         return
     k = ap(t, L[6])   # แครี ฟิชเชอร์!
     g.sunburst(CX, 760, 220, 620, 22, t * 12, 12, (1, 0.9, 0.6, 0.7))
-    if not photo(g, "carrie", 720, 700, 420, 520, 3, k, 1.04, label="แครี ฟิชเชอร์"):
-        pass
     person(g, CX, GROUND, LEIA, 0.92, mood="smile", pose="wave", turn=0.15, seed=1)
     g.label('"แครี ฟิชเชอร์"!', CX, 370, 96, color=GOLDTXT, sc=k, rot=-4)
     g.name_tag(t, L[6] + 0.3, 800, 1120, "แครี ฟิชเชอร์", "นักแสดง · นักเขียน (1956–2016)", side=-1)

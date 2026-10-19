@@ -103,9 +103,8 @@ def s_hook(g, t, L, d):
 def s_chemist(g, t, L, d):
     g.ground(GROUND, WHITE)
     if t < L[2] - 0.2:   # อัลเฟรด โนเบล นักเคมี
-        if not photo(g, "nobel", 700, 720, 420, 540, 3, ap(t, 0.4), 1.05, label="อัลเฟรด โนเบล"):
-            g.sunburst(CX, 720, 260, 620, 22, t * 10, 12, (0.95, 0.85, 0.55, 0.8))
-        person(g, 300 if has_photo("nobel") else CX, GROUND, NOBEL, 0.9, mood="firm",
+        g.sunburst(CX, 720, 260, 620, 22, t * 10, 12, (0.95, 0.85, 0.55, 0.8))
+        person(g, CX, GROUND, NOBEL, 0.9, mood="firm",
                pose="down" if t < 1.5 else "hold", turn=0.2, seed=1)
         g.label('"อัลเฟรด โนเบล"', CX, 340, 92, color=GOLDTXT, sc=ap(t, 0.2), rot=-3)
         g.name_tag(t, 0.8, 800, 1120, "อัลเฟรด โนเบล", "นักเคมี-นักประดิษฐ์ชาวสวีเดน", side=-1)

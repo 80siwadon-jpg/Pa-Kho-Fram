@@ -1,5 +1,15 @@
 [
- {"id": "nobel", "search": "Alfred Nobel portrait Gösta Florman"},
- {"id": "will", "search": "Alfred Nobel will testament 1895"},
- {"id": "medal", "search": "Nobel Prize medal"}
+ {
+  "id": "nobel_portrait",
+  "tag": "อัลเฟรด โนเบล",
+  "search": "Alfred Nobel portrait photograph"
+ },
+ {
+  "id": "will",
+  "search": "Alfred Nobel will testament 1895"
+ },
+ {
+  "id": "medal",
+  "search": "Nobel Prize medal"
+ }
 ]
