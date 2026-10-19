@@ -31,11 +31,14 @@ TRANSITIONS = getattr(_scenes, "TRANSITIONS", {})
 
 BUILD = os.path.join(ROOT, "build", EPISODE)
 FPS = 60
-SUB_TOP = 1400   # ขอบบนของซับ (ซับหลายบรรทัดขยายลงล่าง ไม่ทับภาพ)
-SUB_SIZE = 80
-# ย่อทุกอย่างเข้าด้านบน เว้นพื้นที่ล่าง ~25% และขอบขวาให้ชื่อ/คำอธิบาย/ปุ่มของแพลตฟอร์ม
-SAFE_SCALE = 0.8
-SAFE_TOP = 60
+# ย่อฉากเข้าด้านบน เว้นพื้นที่ล่าง 15% และขอบขวาให้ชื่อ/คำอธิบาย/ปุ่มของแพลตฟอร์ม
+SAFE_SCALE = 0.92
+SAFE_TOP = 50
+SAFE_BOTTOM = int(H * 0.85)   # ห้ามมีอะไรต่ำกว่านี้ (พิกัดจอ)
+SCENE_BOTTOM = 1420           # ขอบล่างของภาพในพิกัดฉาก (ใต้นี้เป็นที่ของซับ)
+SUB_TOP = 1380   # ขอบบนของซับ พิกัดจอ (ซับวาดนอกการย่อฉาก; 2 บรรทัดยังจบเหนือ SAFE_BOTTOM)
+SUB_SIZE = 74
+SUB_W = 900
 
 TL = None
 
@@ -68,10 +71,10 @@ def subtitles(g, t, tl):
         end = min(ln["end"] + 0.3, nxt - 0.02)
         if ln["start"] - 0.05 <= t < end:
             k = e_back(min((t - ln["start"] + 0.05) / 0.18, 1), 2.4)
-            _, _, sw, sh = text_sprite(ln["text"], SUB_SIZE, "kanitsb", INK, 0, PAPER, 1000)
-            fit = min(1.0, 1060 / sw)   # บรรทัดไทยไม่มีเว้นวรรค ตัดคำไม่ได้ -> ย่อให้พอดี
+            _, _, sw, sh = text_sprite(ln["text"], SUB_SIZE, "kanitsb", INK, 0, PAPER, SUB_W)
+            fit = min(1.0, (SUB_W + 40) / sw, (SAFE_BOTTOM - SUB_TOP - 10) / sh)   # ย่อให้พอดีกรอบ
             g.text(ln["text"], W / 2, SUB_TOP + sh * fit / 2, SUB_SIZE, "kanitsb", INK,
-                   sc=(0.85 + 0.15 * k) * fit, maxw=1000)
+                   sc=(0.85 + 0.15 * k) * fit, maxw=SUB_W)
             return
 
 
@@ -101,6 +104,7 @@ def render_frame(frame):
     ctx.set_source_rgba(*PAPER)
     ctx.paint()
     g = Draw(ctx, t, frame)
+    ctx.save()
     ctx.translate(W / 2, SAFE_TOP)
     ctx.scale(SAFE_SCALE, SAFE_SCALE)
     ctx.translate(-W / 2, -SAFE_TOP)
@@ -121,7 +125,7 @@ def render_frame(frame):
         draw_scene(g, s, t)
         ctx.restore()
         ctx.save()
-        ctx.rectangle(-W, -H, 3 * W, H + SUB_TOP - 20)   # เส้นม่านไม่ลงพื้นที่ซับ/พื้นที่ล่าง
+        ctx.rectangle(-W, -H, 3 * W, H + SCENE_BOTTOM)   # เส้นม่านไม่ลงพื้นที่ซับ/พื้นที่ล่าง
         ctx.clip()
         ctx.set_source_rgba(*INK)
         ctx.set_line_width(12)
@@ -135,6 +139,7 @@ def render_frame(frame):
     else:
         draw_scene(g, s, t)
     header(g, t, tl)
+    ctx.restore()
     subtitles(g, t, tl)
     surf.flush()
     return np.ndarray((H, W, 4), np.uint8, surf.get_data())   # BGRA

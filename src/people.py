@@ -37,13 +37,13 @@ class Look:
     build: float = 1.0             # ความกว้างลำตัว
     height: float = 1.0
     pin: bool = False              # เข็มกลัดธงชาติ
-    outfit: str = "suit"           # suit / tee / hoodie / flannel / dress
+    outfit: str = "suit"           # suit / tee / hoodie / flannel / dress / naval / stripe / vest (เชิ้ต+กั๊ก)
     pants: tuple = None            # None = สีเดียวกับเสื้อสูท
     shoes: tuple = None            # None = รองเท้าหนังดำ
-    facial: str = ""               # "" / mustache / goatee (หนวด+เครา)
+    facial: str = ""               # "" / mustache / goatee / beard (เคราเต็มคาง)
     headsc: float = 1.0            # ขนาดหัว (เด็ก ~1.4)
     print_txt: str = ""            # ตัวหนังสือบนอกเสื้อยืด
-    hat: str = ""                  # "" / bicorne (หมวกสองแฉกสวมขวาง) / tricorn
+    hat: str = ""                  # "" / bicorne (หมวกสองแฉกสวมขวาง) / tricorn / tophat / bowler
     hat_trim: tuple = None         # ขอบหมวกสีทอง (None = ไม่มี)
     epaulettes: bool = False       # อินทรธนูทอง
     stars: int = 0                 # ดาวเครื่องราชฯ ที่อกซ้าย
@@ -140,13 +140,14 @@ def _arm(c, look, sx, ang, hand, lw, t):
             _stroke(c, [sh, mid], wd, col, smooth=False)
         _stroke(c, [(sh[0] + sx * 10, sh[1] + 6), (mid[0] + sx * 10, mid[1])], 13, (*SHADOW, 0.22), smooth=False)
     else:
-        for wd, col in ((50 + 2 * lw, INK), (50, look.suit)):
+        sleeve = look.shirt if look.outfit == "vest" else look.suit
+        for wd, col in ((50 + 2 * lw, INK), (50, sleeve)):
             _stroke(c, [sh, el, wr], wd, col, smooth=False)
         # ไล่เงาที่แขนเสื้อ
         _stroke(c, [(sh[0] + sx * 10, sh[1] + 6), (el[0] + sx * 10, el[1]), (wr[0] + sx * 8, wr[1])], 13, (*SHADOW, 0.22), smooth=False)
         # ข้อมือเสื้อเชิ้ต / ปลายแขนเสื้อ
         cf = (wr[0] - ux * 4, wr[1] - uy * 4)
-        cuff = look.shirt if look.outfit == "suit" else look.suit
+        cuff = look.shirt if look.outfit in ("suit", "vest") else look.suit
         _stroke(c, [(cf[0] - uy * 24, cf[1] + ux * 24), (cf[0] + uy * 24, cf[1] - ux * 24)], 14 + 2 * lw, INK, smooth=False)
         _stroke(c, [(cf[0] - uy * 24, cf[1] + ux * 24), (cf[0] + uy * 24, cf[1] - ux * 24)], 14, cuff, smooth=False)
     _hand(c, look, wr[0] + ux * 22, wr[1] + uy * 22, math.atan2(uy, ux), hand, sx, lw)
@@ -392,6 +393,13 @@ def head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw
                          (mx + 10, my - 9), (mx - 10, my - 9)])
         c.set_source_rgba(*hc)
         c.fill()
+        if look.facial == "beard":   # เคราเต็มคางต่อจอน เว้นปาก
+            _smooth_path(c, [(fx - w * 0.99, -14), (fx - w * 0.92, 34), (fx - w * 0.62, 88), (fx - 22, 122), (fx + 22, 122),
+                             (fx + w * 0.62, 88), (fx + w * 0.92, 34), (fx + w * 0.99, -14), (fx + w * 0.78, 18),
+                             (mx + mw + 8, my + 2), (mx, my + 22), (mx - mw - 8, my + 2), (fx - w * 0.78, 18)])
+            _shade(c, hc, 3.5, 0.25)
+            for k in (-1, 0, 1):
+                _stroke(c, [(fx + k * w * 0.35, 70), (fx + k * w * 0.3, 100)], 2.5, INK, 0.3)
         if look.facial == "goatee":
             _smooth_path(c, [(mx - 12, my + 20), (mx + 12, my + 20), (mx + 8, 84), (mx - 8, 84)])
             c.set_source_rgba(*hc)
@@ -413,6 +421,18 @@ def _hat(c, look, w, lw):
         c.new_path()
         c.arc(w * 0.55, -110, 16, 0, 2 * math.pi)
         _shade(c, look.hat_trim or hexc("#c8553d"), 3, 0)
+    elif look.hat == "tophat":   # หมวกทรงสูงยุควิกตอเรีย
+        _rr(c, -w * 0.82, -230, w * 1.64, 150, 10)
+        _shade(c, hexc("#1b1916"), lw, 0.15)
+        _rr(c, -w * 0.82, -110, w * 1.64, 22, 4)
+        _shade(c, hexc("#5a3a2a"), 3, 0)
+        _smooth_path(c, [(-w * 1.3, -76), (-w * 1.1, -92), (w * 1.1, -92), (w * 1.3, -76), (w * 1.1, -70), (-w * 1.1, -70)])
+        _shade(c, hexc("#1b1916"), lw, 0.0)
+    elif look.hat == "bowler":   # หมวกทรงกลม
+        _smooth_path(c, [(-w * 0.9, -86), (-w * 0.8, -150), (0, -176), (w * 0.8, -150), (w * 0.9, -86)])
+        _shade(c, hexc("#2a2420"), lw, 0.2)
+        _smooth_path(c, [(-w * 1.25, -76), (-w * 1.0, -94), (w * 1.0, -94), (w * 1.25, -76), (w * 1.0, -70), (-w * 1.0, -70)])
+        _shade(c, hexc("#2a2420"), lw, 0.0)
     elif look.hat == "tricorn":
         c.new_path()
         for p in [(-w * 1.4, -70), (0, -150), (w * 1.4, -70), (w * 0.6, -60), (0, -84), (-w * 0.6, -60)]:
@@ -430,7 +450,7 @@ def _hair_back(c, look, w, lw):
         c.new_path()
         c.arc(0, -108, w * 0.45, 0, 2 * math.pi)
         _shade(c, look.hair_col, lw, 0.3)
-    if look.hair in ("nixon", "full", "part", "bun"):
+    if look.hair in ("nixon", "full", "part", "bun", "edison"):
         _smooth_path(c, [(-w * 1.06, 10), (-w * 1.1, -50), (-w * 0.7, -92), (0, -100), (w * 0.7, -92), (w * 1.1, -50), (w * 1.06, 10),
                          (w * 0.9, -10), (-w * 0.9, -10)])
         _shade(c, look.hair_col, lw, 0.3)
@@ -467,6 +487,14 @@ def _hair_front(c, look, w, lw, fx):
         _shade(c, col, lw, 0.3)
         _stroke(c, [(-w * 0.35, -98), (-w * 0.3, -70)], 2.5, WHITE, 0.4)
         _stroke(c, [(-w * 0.2, -66), (w * 0.4, -80), (w * 0.85, -70)], 2.5, WHITE, 0.25)
+    elif h == "edison":
+        # ผมหนาดกแสกข้าง ปอยผมตกลงหน้าผากด้านขวา (เอดิสันยุคหนุ่ม)
+        _smooth_path(c, [(-w * 1.1, 14), (-w * 1.12, -58), (-w * 0.66, -108), (w * 0.1, -116), (w * 0.8, -100), (w * 1.12, -58), (w * 1.1, 14),
+                         (w * 0.96, -14), (w * 0.86, -40), (w * 0.62, -30), (w * 0.4, -46), (w * 0.05, -60), (-w * 0.5, -62), (-w * 0.92, -40), (-w * 0.98, -10)])
+        _shade(c, col, lw, 0.3)
+        _stroke(c, [(-w * 0.4, -104), (-w * 0.35, -70)], 2.5, WHITE, 0.35)
+        for k in (-0.1, 0.3, 0.65):
+            _stroke(c, [(w * (k - 0.2), -100), (w * k, -78), (w * (k + 0.15), -50)], 2.2, WHITE, 0.22)
     elif h == "full":
         _smooth_path(c, [(-w * 1.08, 20), (-w * 1.08, -56), (-w * 0.6, -100), (0, -106), (w * 0.6, -100), (w * 1.08, -56), (w * 1.08, 20),
                          (w * 0.94, 0), (w * 0.9, -46), (w * 0.4, -60), (0, -56), (-w * 0.4, -62), (-w * 0.9, -46), (-w * 0.94, 0)])
@@ -576,6 +604,8 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
             _suit(c, look, bw, lw)
         elif look.outfit == "naval":
             _naval(c, look, bw, lw)
+        elif look.outfit == "vest":
+            _vest(c, look, bw, lw)
         else:
             _casual(c, look, bw, lw)
         if not back_first and look.empty_arm != -1:
@@ -730,6 +760,38 @@ def _casual(c, look, bw, lw):
         c.set_source_surface(surf, -tw / 2, -th / 2)
         c.paint()
         c.restore()
+
+
+def _vest(c, look, bw, lw):
+    """เชิ้ตขาวพับแขน + เสื้อกั๊ก + หูกระต่าย/ผ้าผูกคอ + สายนาฬิกาพก (ยุค 1870s)"""
+    _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
+                     (112 * bw, -414), (0, -406), (-112 * bw, -414), (-110 * bw, -480), (-124 * bw, -650)])
+    _shade(c, look.shirt, lw, 0.22)
+    for sx in (-1, 1):   # กั๊กสองชิ้น เปิดคอวี
+        _smooth_path(c, [(sx * 46, -742), (sx * 100 * bw, -715), (sx * 112 * bw, -560), (sx * 108 * bw, -430),
+                         (sx * 50, -398), (sx * 2, -420), (sx * 2, -600)])
+        _shade(c, look.suit, lw, 0.18 if sx < 0 else 0.38)
+    for by in (-590, -540, -490, -440):
+        c.new_path()
+        c.arc(10, by, 5.5, 0, 2 * math.pi)
+        _shade(c, hexc("#c9b083"), 2, 0)
+    _stroke(c, [(10, -515), (50, -488), (88, -500)], 3.5, hexc("#e3a92b"), smooth=True)   # สายนาฬิกาพก
+    for sx in (-1, 1):   # ปกเชิ้ต
+        c.new_path()
+        for p in [(sx * 6, -752), (sx * 44, -760), (sx * 34, -724)]:
+            c.line_to(*p)
+        c.close_path()
+        _shade(c, look.shirt, 3.5, 0.1)
+    for sx in (-1, 1):   # หูกระต่ายเล็ก
+        c.new_path()
+        c.move_to(0, -738)
+        c.line_to(sx * 28, -752)
+        c.line_to(sx * 28, -722)
+        c.close_path()
+        _shade(c, look.tie, 3.5, 0.2)
+    c.new_path()
+    c.arc(0, -737, 7, 0, 2 * math.pi)
+    _shade(c, look.tie, 3.5, 0.0)
 
 
 def _suit(c, look, bw, lw):

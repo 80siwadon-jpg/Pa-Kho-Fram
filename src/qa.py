@@ -24,7 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EPISODE = os.environ.get("EPISODE", "alaska")
 BUILD = os.path.join(ROOT, "build", EPISODE)
 W, H = 1080, 1920
-SAFE_Y = int(H * 0.75)
+SAFE_Y = int(H * 0.85)   # พื้นที่ล่าง 15% ต้องว่าง
 
 
 def probe(path):
@@ -76,7 +76,7 @@ def sheets(path, dur, out_prefix, per_sheet=24, cols=8):
             x, y = (i % cols) * tw, (i // cols) * (th + 24)
             sheet.paste(Image.fromarray(im), (x, y + 24))
             d.rectangle([x, y + 24, x + tw - 1, y + 24 + th - 1], outline=(200, 200, 200))
-            d.line([x, y + 24 + th * 0.75, x + tw, y + 24 + th * 0.75], fill=(230, 80, 80))
+            d.line([x, y + 24 + th * SAFE_Y / H, x + tw, y + 24 + th * SAFE_Y / H], fill=(230, 80, 80))
             d.text((x + 6, y + 2), f"{s + i}s", fill=(0, 0, 0), font=font)
         p = f"{out_prefix}_{s // per_sheet + 1}.png"
         sheet.save(p)
@@ -117,7 +117,7 @@ def main():
 
     # ตรวจทุกเฟรม (ย่อ) ที่ 10 fps: พื้นที่ล่าง, เฟรมดำ, ภาพค้าง
     small_w, small_h = 270, 480
-    sy = int(small_h * 0.75) + 2
+    sy = int(small_h * SAFE_Y / H) + 2
     prev, still_since, black, intrusions = None, 0.0, [], []
     still_spans = []
     for i, f in enumerate(frames(a.video, 10, small_w, small_h)):
