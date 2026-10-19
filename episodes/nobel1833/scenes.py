@@ -109,7 +109,7 @@ def s_chemist(g, t, L, d):
         g.label('"อัลเฟรด โนเบล"', CX, 340, 92, color=GOLDTXT, sc=ap(t, 0.2), rot=-3)
         g.name_tag(t, 0.8, 800, 1120, "อัลเฟรด โนเบล", "นักเคมี-นักประดิษฐ์ชาวสวีเดน", side=-1)
         if t > L[1] - 0.2:
-            flask(g, 860, 900, 0.6 * ap(t, L[1]), t)
+            flask(g, 220, 1000, 0.6 * ap(t, L[1]), t)
         return
     if t < L[4] - 0.2:   # ไม่ใช่อาวุธ แต่ควบคุมสารอันตราย
         person(g, 260, GROUND, NOBEL_YOUNG, 0.82, mood="firm", pose="hold", turn=0.4, seed=1)
