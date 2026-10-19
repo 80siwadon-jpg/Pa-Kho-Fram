@@ -160,15 +160,39 @@ def text_sprite(s, size, fnt="kanitsb", color=INK, stroke=0, stroke_color=PAPER,
     return _SPRITES[key]
 
 
+def _thai_words(s):
+    """ตัดคำไทยด้วย pythainlp (ถ้ามี) ไม่งั้นตัดที่ช่องว่างอย่างเดียว"""
+    try:
+        from pythainlp.tokenize import word_tokenize
+        return word_tokenize(s, engine="newmm", keep_whitespace=True)
+    except ImportError:
+        return re.split("( |\u200b)", s)
+
+
 def wrap(s, f, maxw):
-    """ตัดบรรทัดที่ช่องว่างหรือ zero-width space (\u200b จุดตัดที่มองไม่เห็น)
-    ถ้าไม่พอดีบรรทัดเดียว เลือกจุดตัดที่ทำให้ 2 บรรทัดยาวใกล้กันที่สุด"""
+    """ตัดซับเป็นไม่เกิน 2 บรรทัดที่ยาวใกล้กัน: ตัดได้ทุกขอบคำ (ตัดคำไทยอัตโนมัติ)
+    แต่ชอบตัดตรงช่องว่าง / \u200b (จุดตัดที่ผู้เขียนบทใส่ไว้) มากกว่า"""
     tmp = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    parts = re.split("( |\u200b)", s)
-    if tmp.textlength(s, font=f) <= maxw or len(parts) == 1:
+    if tmp.textlength(s, font=f) <= maxw:
         return [s]
-    cands = [("".join(parts[:i]), "".join(parts[i + 1:])) for i in range(1, len(parts), 2)]
-    return list(min(cands, key=lambda p: max(tmp.textlength(p[0], font=f), tmp.textlength(p[1], font=f))))
+    toks = [t for t in _thai_words(s) if t != ""]
+    best, best_score = [s], 1e9
+    for i in range(1, len(toks)):
+        a, b = "".join(toks[:i]), "".join(toks[i:])
+        explicit = a.endswith((" ", "\u200b")) or b.startswith((" ", "\u200b"))
+        a, b = a.rstrip(" \u200b"), b.lstrip(" \u200b")
+        if not a or not b or b[0] in "?!.,ๆ…":
+            continue
+        if (b[0] == '"' and b.count('"') % 2) or (a[-1] == '"' and a.count('"') % 2):   # อย่าแยกเครื่องหมายคำพูดจากคำ
+            continue
+        score = max(tmp.textlength(a, font=f), tmp.textlength(b, font=f)) - (110 if explicit else 0)
+        if a[-1].isdigit():   # อย่าแยกตัวเลขออกจากคำที่ตามมา เช่น "20 ตุลาคม"
+            score += 150
+        if min(tmp.textlength(a, font=f), tmp.textlength(b, font=f)) < 0.3 * maxw:   # กันคำสั้นค้างบรรทัด
+            score += 160
+        if score < best_score:
+            best, best_score = [a, b], score
+    return best
 
 
 # ---------------------------------------------------------------- drawer
@@ -801,7 +825,9 @@ class Draw:
             self.circle(xx, yy, r, WHITE, 3, stroke=GREY)
 
     def ground(self, y, fill=WHITE, seed=141):
-        pts = [(x, y + 10 * math.sin(x * 0.01 + seed)) for x in range(-400, W + 401, 60)] + [(W + 400, H + 3000), (-400, H + 3000)]
+        # กว้าง ±3000px: กล้องแพน/เหวี่ยงแรง ๆ จะได้ไม่เห็นขอบข้างของพื้น
+        pts = [(x, y + 10 * math.sin(x * 0.01 + seed)) for x in range(-3000, W + 3001, 60)] + \
+              [(W + 3000, H + 3000), (-3000, H + 3000)]
         self.poly(pts, fill, 8, seed=seed, amp=1.0)
 
     def sunburst(self, x, y, r0, r1, n=20, rot=0, lw=10, col=LGREY):

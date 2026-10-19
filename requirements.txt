@@ -2,3 +2,4 @@ numpy
 pillow
 pycairo
 sherpa-onnx
+pythainlp

@@ -15,6 +15,7 @@ import cairo
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
+import camera  # noqa: E402
 from gfx import INK, PAPER, W, H, Draw, e_back, e_io, text_sprite  # noqa: E402
 from script_data import HEADER  # noqa: E402
 import importlib.util  # noqa: E402
@@ -25,10 +26,11 @@ _spec = importlib.util.spec_from_file_location("scenes", os.path.join(ROOT, "epi
 _scenes = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_scenes)
 SCENES, NO_IRIS = _scenes.SCENES, getattr(_scenes, "NO_IRIS", set())
+CAMERA = getattr(_scenes, "CAMERA", {})
+TRANSITIONS = getattr(_scenes, "TRANSITIONS", {})
 
 BUILD = os.path.join(ROOT, "build", EPISODE)
 FPS = 60
-IRIS = 0.35
 SUB_TOP = 1400   # ขอบบนของซับ (ซับหลายบรรทัดขยายลงล่าง ไม่ทับภาพ)
 SUB_SIZE = 80
 # ย่อทุกอย่างเข้าด้านบน เว้นพื้นที่ล่าง ~25% และขอบขวาให้ชื่อ/คำอธิบาย/ปุ่มของแพลตฟอร์ม
@@ -41,7 +43,8 @@ TL = None
 def load_timeline():
     with open(os.path.join(BUILD, "timeline.json"), encoding="utf-8") as f:
         tl = json.load(f)
-    for s in tl["scenes"]:
+    for i, s in enumerate(tl["scenes"]):
+        s["idx"] = i
         s["L"] = [ln["start"] - s["start"] for ln in tl["lines"] if ln["scene"] == s["name"]]
     return tl
 
@@ -78,11 +81,15 @@ def scene_at(tl, t):
             return i, s
 
 
-def draw_scene(g, s, t):
+def draw_scene(g, s, t, extra=(1.0, 1.0, 0, 0)):
+    """วาดฉากผ่านกล้อง; extra = (alpha, zoom เพิ่ม, dx, dy) สำหรับทรานซิชัน"""
     lt, d = t - s["start"], s["end"] - s["start"]
-    z = 1 + 0.04 * e_io(min(max(lt / max(d, 0.1), 0), 1))   # กล้องค่อย ๆ ดันเข้า ภาพไม่นิ่งตาย
-    with g.at(W / 2, 800, z):
-        with g.at(-W / 2, -800):
+    move = camera.MOVES[camera.move_for(s["idx"], s["name"], CAMERA)]
+    z, dx, dy, rot = move(camera.progress(lt, s["L"], d))
+    a, ez, ex, ey = extra
+    cam = (z * ez, dx + ex, dy + ey, rot)
+    with g.alpha(a):
+        with camera.apply(g, cam):
             SCENES[s["name"]](g, lt, s["L"], d)
 
 
@@ -100,9 +107,12 @@ def render_frame(frame):
 
     i, s = scene_at(tl, t)
     lt = t - s["start"]
-    if i > 0 and lt < IRIS and (tl["scenes"][i - 1]["name"], s["name"]) not in NO_IRIS:
-        draw_scene(g, tl["scenes"][i - 1], t)
-        r = e_io(lt / IRIS) * 1250
+    prev = tl["scenes"][i - 1] if i > 0 else None
+    kind = "cut" if prev is None or (prev["name"], s["name"]) in NO_IRIS else \
+        camera.transition_for(i, s["name"], TRANSITIONS)
+    if prev is not None and lt < camera.TR and kind == "iris":
+        draw_scene(g, prev, t)
+        r = e_io(lt / camera.TR) * 1250
         ctx.save()
         ctx.arc(W / 2, 860, r, 0, 2 * math.pi)
         ctx.clip()
@@ -118,6 +128,10 @@ def render_frame(frame):
         ctx.arc(W / 2, 860, r, 0, 2 * math.pi)
         ctx.stroke()
         ctx.restore()
+    elif prev is not None and lt < camera.TR and kind != "cut":
+        old, new = camera.transition_frames(kind, lt / camera.TR)
+        draw_scene(g, prev, t, old)
+        draw_scene(g, s, t, new)
     else:
         draw_scene(g, s, t)
     header(g, t, tl)

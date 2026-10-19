@@ -145,6 +145,20 @@ def main():
         n += size
     chunks.append(cur)
 
+    # ทุกก้อนต้องใช้โมเดลเดียวกัน (เสียงจะได้สม่ำเสมอ): ถ้าโควตาหมดกลางทางจนต้องเปลี่ยนโมเดล
+    # ให้สร้างก้อนก่อนหน้าใหม่ด้วยโมเดลที่ใช้ได้ (ก้อนที่แคชไว้แล้วไม่เสียโควตา)
+    for _ in range(len(models)):
+        used = []
+        for chunk in chunks:
+            texts = [clean(d) for _, d in chunk]
+            _, model = speak(PAUSE.join(texts), models, a.voice, key, cache)
+            used.append(model)
+            models = [model] + [m for m in models if m != model]
+        if len(set(used)) == 1:
+            break
+        models = [used[-1]] + [m for m in models if m != used[-1]]
+        print(f"  โมเดลไม่ตรงกันระหว่างก้อน {used} -> สร้างใหม่ทั้งหมดด้วย {used[-1]}")
+
     lines = []
     for ci, chunk in enumerate(chunks):
         texts = [clean(d) for _, d in chunk]
