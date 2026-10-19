@@ -150,7 +150,7 @@ def s_hook(g, t, L, d):
         for i, (lk, x) in enumerate(((BATCHELOR, 170), (EDISON, 900))):
             with g.at(x, 680 + 6 * math.sin(t * 2 + i), 1.25):
                 head(g, lk, "worry" if i == 0 else "firm", turn=0.4 if x < CX else -0.4, look_at=(1 if x < CX else -1, 0.3))
-        g.label("เส้นด้ายสีดำ", CX, 1150, 72, sc=pop(t, L[3] + 0.4))
+        g.label("เส้นด้ายสีดำ", CX, 1150, 72, sc=pop(t, L[3] + 0.4) * (1 - seg(t, L[4] - 0.4, L[4] - 0.1)))
         if t > L[4] - 0.2:
             beat = 1 + 0.18 * max(0, math.sin(t * 9)) ** 4
             heart(g, CX, 1120, 1.1 * beat * pop(t, L[4]))
@@ -166,11 +166,11 @@ def s_hook(g, t, L, d):
         return
     if t < L[6] - 0.2:   # ถ้าขาดเหมือนทุกครั้ง
         g.ground(GROUND, WHITE)
-        bulb(g, CX, 760, 2.0, t=t, burn=seg(t, L[5] + 1.0, L[5] + 1.5))
+        bulb(g, CX, 700, 1.7, t=t, burn=seg(t, L[5] + 1.0, L[5] + 1.5))
         for i in range(5):
             x_mark(g, 170 + i * 185, 1130, 0.8, pop(t, L[5] + 0.3 + i * 0.25))
         g.label("ทุกครั้งที่ผ่านมา", CX, 330, 72, color=RED, sc=pop(t, L[5] + 0.2))
-        burst(g, CX, 640, t, L[5] + 1.1, 8, 160, 18)
+        burst(g, CX, 600, t, L[5] + 1.1, 8, 160, 18)
         return
     # ความฝันจะเอาชนะความมืด ... อาจดับลง
     g.ground(GROUND, WHITE)
@@ -309,7 +309,7 @@ def s_trials(g, t, L, d):
         kinds = ["platinum", "fiber", "hair", "platinum", "fiber", "hair", "fiber", "platinum", "hair"]
         for i, kd in enumerate(kinds):
             x, y = 220 + (i % 3) * 320, 560 + (i // 3) * 260
-            material(g, kd, x, y, 0.9 * pop(t, L[3] + i * 0.18), t)
+            material(g, kd, x, y, 0.9 * pop(t, L[3] - 0.25 + i * 0.12), t)
         g.label("แทบทุกอย่างบนโลก", CX, 330, 80, sc=pop(t, L[3] + 0.1), rot=-3)
         return
     if t < L[5] - 0.2:   # แพลทินัม
@@ -539,6 +539,9 @@ def s_legacy(g, t, L, d):
 def s_lesson(g, t, L, d):
     g.ground(GROUND, WHITE)
     g.label("บทเรียน", CX, 340, 100, sc=pop(t, 0.1), rot=-3)
+    if t < L[1] - 0.2:
+        bulb(g, CX, 780, 1.4 * pop(t, 0.3), t=t, glow=0.85 + 0.15 * math.sin(t * 4))
+        return
     if t < L[3] - 0.2:
         if t > L[1] - 0.2:
             for i in range(9):   # เส้นแบ่ง
@@ -597,7 +600,7 @@ def s_outro(g, t, L, d):
     person(g, 270, GROUND, EDISON, 0.75, mood="smile", pose="wave", turn=0.3, seed=1, talk=True)
     for i in range(5):
         g.sparkle(160 + i * 190, 1180 + 20 * math.sin(t * 3 + i), 14 * pop(t, L[3] + 0.5 + i * 0.3))
-    g.label("คอมเมนต์คุยกันได้เลย!", 660, 960, 62, color=RED, sc=pop(t, L[3] + 0.4))
+    g.label("คอมเมนต์คุยกันได้เลย!", 680, 1150, 62, color=RED, sc=pop(t, L[3] + 0.4))
 
 
 SCENES = {
