@@ -50,6 +50,7 @@ class Look:
     empty_arm: int = 0             # แขนด้วน: -1 = แขนข้างซ้ายจอ (แขนขวาของตัวละคร), 1 = ขวาจอ
     collar: tuple = None           # สีปกคอตั้ง (เสื้อนายทหาร)
     cape: tuple = None             # ผ้าคลุมไหล่ยาว (สีผ้า) เช่น แฟรงก์ ลอยด์ ไรต์
+    goggles: bool = False          # แว่นกันฝุ่นคาดบนหมวก (hat="peaked" แบบรอมเมล)
     sash: tuple = None             # สายสะพายพาดไหล่ขวา (สีผ้า) — ใช้กับ outfit="tunic"
 
 
@@ -466,6 +467,33 @@ def _hat(c, look, w, lw):
         _smooth_path(c, [(-w * 1.15, -70), (-w * 1.0, -120), (-w * 0.2, -150), (w * 0.9, -128), (w * 1.1, -80), (0, -76)])
         _shade(c, look.hat_trim or hexc("#2b2622"), lw, 0.2)
         _stroke(c, [(0, -146), (6, -166)], 6, INK, smooth=False)
+    elif look.hat == "peaked":   # หมวกนายทหารทรงหม้อตาล (ยอดโค้งสูง) + กะบังหน้า
+        col = look.hat_trim or hexc("#5a5a48")
+        c.translate(0, 24)   # สวมต่ำปิดหน้าผาก (คืนค่าเองตอนท้าย)
+        _smooth_path(c, [(-w * 0.98, -82), (-w * 1.18, -140), (-w * 0.6, -168), (w * 0.6, -168), (w * 1.18, -140),
+                         (w * 0.98, -82)])
+        _shade(c, col, lw, 0.25)
+        _rr(c, -w * 1.0, -106, w * 2.0, 28, 6)
+        _shade(c, hexc("#2b2622"), 3.5, 0.1)
+        _smooth_path(c, [(-w * 0.95, -82), (w * 0.95, -82), (w * 0.75, -60), (-w * 0.75, -60)])
+        _shade(c, hexc("#1b1916"), lw, 0.0)   # กะบังหน้า
+        c.new_path()
+        c.arc(0, -124, 10, 0, 2 * math.pi)
+        _shade(c, hexc("#d9d5cc"), 3, 0.1)
+        if look.goggles:
+            _stroke(c, [(-w * 1.1, -138), (w * 1.1, -138)], 7, hexc("#3a3024"), smooth=False)
+            for sx in (-1, 1):
+                c.new_path()
+                c.arc(sx * w * 0.4, -142, w * 0.26, 0, 2 * math.pi)
+                _shade(c, hexc("#9fb4c0"), 5, 0.3)
+                _stroke(c, [(sx * w * 0.4 - 7, -152), (sx * w * 0.4 + 4, -145)], 4, WHITE, 0.8, smooth=False)
+        c.translate(0, -24)
+    elif look.hat == "brodie":   # หมวกเหล็กทหารอังกฤษ (จานแบนปีกกว้าง)
+        col = look.hat_trim or hexc("#7a7350")
+        _smooth_path(c, [(-w * 0.95, -96), (-w * 0.8, -150), (0, -166), (w * 0.8, -150), (w * 0.95, -96)])
+        _shade(c, col, lw, 0.25)
+        _smooth_path(c, [(-w * 1.6, -88), (-w * 1.2, -104), (w * 1.2, -104), (w * 1.6, -88), (w * 1.2, -78), (-w * 1.2, -78)])
+        _shade(c, col, lw, 0.1)
     elif look.hat == "tricorn":
         c.new_path()
         for p in [(-w * 1.4, -70), (0, -150), (w * 1.4, -70), (w * 0.6, -60), (0, -84), (-w * 0.6, -60)]:
