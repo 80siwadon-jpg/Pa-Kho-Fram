@@ -32,6 +32,7 @@
   (ดูตัวอย่าง episodes/trafalgar1805/chars.py — มีเรือรบใบ, แผนผังเรือมองบน, ทะเล, ธงสัญญาณ)
   ยุควิกตอเรีย: `outfit="vest"` (เชิ้ตขาว+กั๊ก+หูกระต่าย+สายนาฬิกา), `hat="tophat"/"bowler"`, `facial="beard"` (เคราเต็มคาง),
   ผม `edison` (ดู episodes/edison1879/chars.py — หลอดไฟ, เทียน, ตะเกียง, นาฬิกา, เมืองกลางคืน, บันได)
+  ศตวรรษที่ 17: `band=True` (ปกลูกไม้ขาว) + `hat="cavalier"` (ดู episodes/westphalia1648)
   สงครามโลกครั้งที่ 2: `hat="peaked"` + `goggles=True` (รอมเมล), `hat="beret"` (มอนต์โกเมอรี), `hat="brodie"` (ทหารอังกฤษ)
   — ดู episodes/alamein1942/chars.py (รถถัง, ปืนใหญ่, กับระเบิด, ทะเลทราย, ฟ้ากลางคืน+แสงวาบ); ไม่ใช้สัญลักษณ์นาซี/ไม่วาดฮิตเลอร์
   นักฟุตบอล: `shorts=True` + `socks=` + `print_txt="10"` (ดู episodes/pele1940 — ลูกบอล, ถ้วยโลก, เสื้อทีม, สลัม)

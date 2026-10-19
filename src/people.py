@@ -53,6 +53,7 @@ class Look:
     goggles: bool = False          # แว่นกันฝุ่นคาดบนหมวก (hat="peaked" แบบรอมเมล)
     shorts: bool = False           # กางเกงขาสั้น + ถุงเท้ายาว (ชุดนักฟุตบอล; สีถุงเท้า = socks)
     socks: tuple = None
+    band: bool = False             # ปกลูกไม้ขาวแบนคลุมไหล่ (ศตวรรษที่ 17)
     sash: tuple = None             # สายสะพายพาดไหล่ขวา (สีผ้า) — ใช้กับ outfit="tunic"
 
 
@@ -496,6 +497,18 @@ def _hat(c, look, w, lw):
         _shade(c, col, lw, 0.25)
         _smooth_path(c, [(-w * 1.6, -88), (-w * 1.2, -104), (w * 1.2, -104), (w * 1.6, -88), (w * 1.2, -78), (-w * 1.2, -78)])
         _shade(c, col, lw, 0.1)
+    elif look.hat == "cavalier":   # หมวกปีกกว้างทรงสูงแบบศตวรรษที่ 17 + ขนนก
+        col = look.hat_trim or hexc("#2b2622")
+        c.translate(0, 26)   # สวมลึกลงมาถึงหน้าผาก (คืนค่าท้าย)
+        _smooth_path(c, [(-w * 0.85, -86), (-w * 0.8, -190), (w * 0.8, -190), (w * 0.85, -86)])
+        _shade(c, col, lw, 0.2)
+        _rr(c, -w * 0.86, -112, w * 1.72, 22, 4)
+        _shade(c, hexc("#8a6a3a"), 3, 0)
+        _smooth_path(c, [(-w * 1.9, -70), (-w * 1.4, -96), (w * 1.4, -96), (w * 1.9, -70), (w * 1.4, -78), (-w * 1.4, -78)])
+        _shade(c, col, lw, 0.0)
+        _smooth_path(c, [(w * 0.5, -110), (w * 1.3, -200), (w * 1.6, -170), (w * 0.8, -96)])
+        _shade(c, WHITE, 3.5, 0.15)   # ขนนก
+        c.translate(0, -26)
     elif look.hat == "tricorn":
         c.new_path()
         for p in [(-w * 1.4, -70), (0, -150), (w * 1.4, -70), (w * 0.6, -60), (0, -84), (-w * 0.6, -60)]:
@@ -718,6 +731,15 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
                 c.new_path()
                 c.arc(sx * 30, -575, 9, 0, 2 * math.pi)
                 _shade(c, hexc("#e3a92b"), 3, 0)
+        if look.band:   # ปกขาวแบนคลุมไหล่ + ขอบลูกไม้
+            _smooth_path(c, [(-50, -760), (50, -760), (104, -722), (90, -660), (0, -650), (-90, -660), (-104, -722)])
+            _shade(c, WHITE, 4, 0.12)
+            for k in range(-4, 5):
+                c.new_path()
+                c.arc(k * 22, -656 - 6 * (abs(k) > 3), 9, 0, math.pi)
+                c.set_source_rgba(*INK[:3], 0.5)
+                c.set_line_width(2.5)
+                c.stroke()
         if look.cape:   # ผ้าคลุมไหล่ ทับลำตัว ปลายบานถึงเข่า
             for sx in (-1, 1):
                 _smooth_path(c, [(sx * 40, -756), (sx * 134 * bw, -720), (sx * 168 * bw, -420), (sx * 176 * bw, -250),
