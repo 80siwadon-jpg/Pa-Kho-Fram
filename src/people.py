@@ -19,7 +19,7 @@ SHADOW = (0.12, 0.09, 0.1)
 
 @dataclass
 class Look:
-    hair: str = "short"            # nixon, crew, slick, part, full, bald, buzz, braids, bun, afro, long, edison
+    hair: str = "short"            # nixon, crew, slick, part, full, bald, buzz, braids, bun, afro, long, edison, leia
     hair_col: tuple = hexc("#3a2f28")
     skin: tuple = SKIN_R
     suit: tuple = hexc("#30343c")
@@ -474,6 +474,17 @@ def _hair_back(c, look, w, lw):
         c.new_path()
         c.arc(0, -40, w * 1.45, 0, 2 * math.pi)
         _shade(c, look.hair_col, lw, 0.3)
+    if look.hair == "leia":   # มวยผมขดกลมสองข้างหู (ทรง "ซาลาเปา")
+        for sx in (-1, 1):
+            c.new_path()
+            c.arc(sx * w * 1.18, -6, w * 0.52, 0, 2 * math.pi)
+            _shade(c, look.hair_col, lw, 0.3)
+            for k in (0.36, 0.2):
+                c.new_path()
+                c.arc(sx * w * 1.18, -6, w * k, 0.3, 5.6)
+                c.set_source_rgba(1, 1, 1, 0.22)
+                c.set_line_width(2.5)
+                c.stroke()
     if look.hair == "long":   # ผมยาวตรงประบ่า (ยุค 60s)
         _smooth_path(c, [(-w * 1.12, -40), (-w * 0.8, -100), (0, -108), (w * 0.8, -100), (w * 1.12, -40),
                          (w * 1.22, 120), (w * 1.0, 170), (w * 0.6, 150), (-w * 0.6, 150), (-w * 1.0, 170), (-w * 1.22, 120)])
@@ -537,6 +548,11 @@ def _hair_front(c, look, w, lw, fx):
         _smooth_path(c, [(-w * 1.02, -16), (-w * 1.0, -64), (-w * 0.6, -94), (0, -98), (w * 0.6, -94), (w * 1.0, -64), (w * 1.02, -16),
                          (w * 0.9, -46), (w * 0.5, -64), (0, -68), (-w * 0.5, -64), (-w * 0.9, -46)])
         _shade(c, col, 0 if h == "afro" else lw, 0.25)
+    elif h == "leia":   # แสกกลาง หวีเรียบ
+        _smooth_path(c, [(-w * 1.04, 0), (-w * 1.03, -58), (-w * 0.6, -98), (0, -104), (w * 0.6, -98), (w * 1.03, -58), (w * 1.04, 0),
+                         (w * 0.92, -20), (w * 0.6, -60), (0, -78), (-w * 0.6, -60), (-w * 0.92, -20)])
+        _shade(c, col, lw, 0.3)
+        _stroke(c, [(0, -104), (0, -80)], 3, WHITE, 0.35)
     elif h in ("bun", "long"):
         _smooth_path(c, [(-w * 1.05, 10), (-w * 1.04, -58), (-w * 0.6, -98), (0, -102), (w * 0.6, -98), (w * 1.04, -58), (w * 1.05, 10),
                          (w * 0.92, -20), (w * 0.6, -58), (0, -64), (-w * 0.6, -58), (-w * 0.92, -20)])
@@ -606,7 +622,9 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
         c.rotate(math.radians(lean))
         if legs:
             for sx in (-1, 1):
-                if look.outfit == "dress":
+                if look.outfit == "gown":   # ชุดยาวคลุมเท้า
+                    pass
+                elif look.outfit == "dress":
                     _rr(c, sx * 48 - 20, -260, 40, 230, 16)
                     _shade(c, look.skin, lw, 0.3)
                 else:
@@ -734,11 +752,19 @@ def _casual(c, look, bw, lw):
     if o == "hoodie":   # ฮู้ดด้านหลังคอ
         _smooth_path(c, [(-90, -760), (0, -800), (90, -760), (70, -720), (-70, -720)])
         _shade(c, col, lw, 0.35)
-    hem = -406 if o != "dress" else -250
-    wide = 1.0 if o != "dress" else 1.35
+    hem = {"dress": -250, "gown": -30}.get(o, -406)
+    wide = {"dress": 1.35, "gown": 1.75}.get(o, 1.0)
     _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
                      (112 * bw * wide, hem - 8), (0, hem), (-112 * bw * wide, hem - 8), (-110 * bw, -480), (-124 * bw, -650)])
     _shade(c, col, lw, 0.32)
+    if o == "gown":   # เข็มขัดเงิน + จีบผ้า
+        for k in (-0.45, 0.0, 0.45):
+            _stroke(c, [(k * 60, -420), (k * 150, -60)], 3, INK, 0.25)
+        _rr(c, -112 * bw, -470, 224 * bw, 30, 8)
+        _shade(c, hexc("#c9ced6"), 3.5, 0.2)
+        for k in range(-3, 4):
+            _rr(c, k * 30 - 10, -466, 20, 22, 4)
+            _shade(c, hexc("#9aa1ab"), 2, 0)
     if o == "stripe":   # เสื้อลายขวางทหารเรือ
         c.save()
         _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
