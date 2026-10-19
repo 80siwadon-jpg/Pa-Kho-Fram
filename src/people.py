@@ -43,12 +43,13 @@ class Look:
     facial: str = ""               # "" / mustache / goatee / beard (เคราเต็มคาง)
     headsc: float = 1.0            # ขนาดหัว (เด็ก ~1.4)
     print_txt: str = ""            # ตัวหนังสือบนอกเสื้อยืด
-    hat: str = ""                  # "" / bicorne (หมวกสองแฉกสวมขวาง) / tricorn / tophat / bowler
+    hat: str = ""                  # "" / bicorne / tricorn / tophat / bowler / porkpie (ปีกกว้างทรงแบน) / beret
     hat_trim: tuple = None         # ขอบหมวกสีทอง (None = ไม่มี)
     epaulettes: bool = False       # อินทรธนูทอง
     stars: int = 0                 # ดาวเครื่องราชฯ ที่อกซ้าย
     empty_arm: int = 0             # แขนด้วน: -1 = แขนข้างซ้ายจอ (แขนขวาของตัวละคร), 1 = ขวาจอ
     collar: tuple = None           # สีปกคอตั้ง (เสื้อนายทหาร)
+    cape: tuple = None             # ผ้าคลุมไหล่ยาว (สีผ้า) เช่น แฟรงก์ ลอยด์ ไรต์
 
 
 def _shade(c, fill, lw=4.5, dark=0.24, horiz=True, stroke=INK):
@@ -433,6 +434,17 @@ def _hat(c, look, w, lw):
         _shade(c, hexc("#2a2420"), lw, 0.2)
         _smooth_path(c, [(-w * 1.25, -76), (-w * 1.0, -94), (w * 1.0, -94), (w * 1.25, -76), (w * 1.0, -70), (-w * 1.0, -70)])
         _shade(c, hexc("#2a2420"), lw, 0.0)
+    elif look.hat == "porkpie":   # หมวกปีกกว้างทรงแบน (แฟรงก์ ลอยด์ ไรต์)
+        _rr(c, -w * 0.85, -150, w * 1.7, 70, 14)
+        _shade(c, hexc("#2c2a2e"), lw, 0.15)
+        _rr(c, -w * 0.85, -100, w * 1.7, 16, 3)
+        _shade(c, hexc("#5a4a3a"), 3, 0)
+        _smooth_path(c, [(-w * 1.9, -76), (-w * 1.5, -94), (w * 1.5, -94), (w * 1.9, -76), (w * 1.5, -66), (-w * 1.5, -66)])
+        _shade(c, hexc("#2c2a2e"), lw, 0.0)
+    elif look.hat == "beret":
+        _smooth_path(c, [(-w * 1.15, -70), (-w * 1.0, -120), (-w * 0.2, -150), (w * 0.9, -128), (w * 1.1, -80), (0, -76)])
+        _shade(c, look.hat_trim or hexc("#2b2622"), lw, 0.2)
+        _stroke(c, [(0, -146), (6, -166)], 6, INK, smooth=False)
     elif look.hat == "tricorn":
         c.new_path()
         for p in [(-w * 1.4, -70), (0, -150), (w * 1.4, -70), (w * 0.6, -60), (0, -84), (-w * 0.6, -60)]:
@@ -617,6 +629,12 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
                 c.new_path()
                 c.arc(sx * 30, -575, 9, 0, 2 * math.pi)
                 _shade(c, hexc("#e3a92b"), 3, 0)
+        if look.cape:   # ผ้าคลุมไหล่ ทับลำตัว ปลายบานถึงเข่า
+            for sx in (-1, 1):
+                _smooth_path(c, [(sx * 40, -756), (sx * 134 * bw, -720), (sx * 168 * bw, -420), (sx * 176 * bw, -250),
+                                 (sx * 120 * bw, -240), (sx * 104 * bw, -560), (sx * 56, -700)])
+                _shade(c, look.cape, lw, 0.2 if sx < 0 else 0.42)
+            _stroke(c, [(-40, -756), (40, -756)], 7, hexc("#c9a24a"), smooth=False)
         if look.epaulettes:
             for sx in (-1, 1):
                 _rr(c, sx * 112 - 38, -742, 76, 30, 12)

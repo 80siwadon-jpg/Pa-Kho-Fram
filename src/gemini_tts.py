@@ -75,12 +75,11 @@ def tts_models(key):
 
 def speak(text, models, voice_name, key, cache):
     """คืน (path ของ wav 24k, ชื่อโมเดลที่ใช้)"""
-    for model in models:
+    for model in models:   # ไล่ตามลำดับที่ต้องการ: ใช้แคชของโมเดลนั้นถ้ามี ไม่งั้นขอใหม่ (ไม่ข้ามไปใช้แคชโมเดลอื่นก่อน)
         h = hashlib.sha1(f"{model}|{voice_name}|{PROMPT}|{text}".encode()).hexdigest()[:16]
         p = os.path.join(cache, h + ".wav")
         if os.path.exists(p):
             return p, model
-    for model in models:
         body = {
             "contents": [{"parts": [{"text": PROMPT.format(text=text)}]}],
             "generationConfig": {
