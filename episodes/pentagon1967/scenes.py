@@ -265,7 +265,7 @@ def s_girl(g, t, L, d):
     if t > L[1] - 0.2:
         g.line([(480, 640), (640, 640)], 6, RED, amp=0)
         g.label("ห่างไม่กี่นิ้ว", 560, 1180, 62, color=RED, sc=ap(t, L[1] + 0.3))
-        g.label("ดอกเบญจมาศ", 760, 380 if t < L[2] else 1060, 60, color=GOLDTXT, sc=ap(t, L[1]))
+        g.label("ดอกเบญจมาศ", 760, 1060, 60, color=GOLDTXT, sc=ap(t, L[1]))
     if t > L[2] - 0.2:
         for i in range(4):
             g.sparkle(560 + 140 * math.cos(t * 1.5 + i * 1.57), 600 + 90 * math.sin(t * 1.5 + i * 1.57), 14, PINK)
@@ -359,6 +359,9 @@ def s_outro(g, t, L, d):
     if t < L[3] - 0.2:   # ถ้าคุณเป็นทหาร...
         person(g, 300, GROUND, SOLDIERS[1], 0.8, mood="worry" if t < L[2] else "sad", pose="hold", turn=0.35, seed=4)
         rifle(g, 300, GROUND - 512, 0.86, lerp(-60, -45, seg(t, L[1], L[1] + 1)), flower=ap(t, L[1] + 0.6), t=t)
+        for i in range(5):   # กลีบดอกไม้ปลิว
+            u = (t * 0.12 + i / 5) % 1
+            carnation(g, lerp(1100, 450, u), 520 + i * 110 + 40 * math.sin(t * 2 + i), 0.22, t * 3 + i)
         if t < L[2] - 0.2:
             g.label("ถ้าคุณเป็นทหาร...", CX, 380, 80, sc=ap(t, 0.2), rot=-3)
         else:
@@ -384,7 +387,7 @@ def s_outro(g, t, L, d):
     person(g, 250, GROUND, GEORGE, 0.75, mood="smile", pose="wave", turn=0.3, seed=1, talk=True)
     for i in range(5):
         carnation(g, 160 + i * 190, 1190 + 15 * math.sin(t * 3 + i), 0.35 * ap(t, L[5] + 0.5 + i * 0.2), t)
-    g.label("คอมเมนต์คุยกันได้เลย!", 700, 1150, 58, color=RED, sc=ap(t, L[5] + 0.4))
+    g.label("คอมเมนต์คุยกันได้เลย!", 750, 1150, 56, color=RED, sc=ap(t, L[5] + 0.4))
 
 
 SCENES = {
