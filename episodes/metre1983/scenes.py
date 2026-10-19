@@ -417,29 +417,29 @@ def s_lesson(g, t, L, d):
 # ------------------------------------------------------------------ 8. outro
 def s_outro(g, t, L, d):
     g.ground(GROUND, WHITE)
-    if t < L[2] - 0.2:   # มองตลับเมตรที่บ้าน ทึ่งขึ้นไหม
-        person(g, 260, GROUND, KID, 0.9, mood="shock" if t > L[1] + 1 else "smile", pose="hold", turn=0.4, seed=40)
-        tape_measure(g, 470, 1000, 0.6, e_io(seg(t, L[1], L[1] + 2.0)), t)
-        if t > L[1] + 1:
+    if t < L[3] - 0.2:   # มองตลับเมตรที่บ้าน ทึ่งขึ้นไหม
+        person(g, 260, GROUND, KID, 0.9, mood="shock" if t > L[2] + 1 else "smile", pose="hold", turn=0.4, seed=40)
+        tape_measure(g, 470, 1000, 0.6, e_io(seg(t, L[2], L[2] + 2.0)), t)
+        if t > L[2] + 1:
             for i in range(4):
                 g.sparkle(560 + i * 120, 760 + 30 * math.sin(t * 4 + i), 18, GOLD2)
-        g.label("ทึ่งขึ้นไหม?", CX, 380, 90, color=RED, sc=ap(t, L[1]), rot=-3)
+        g.label("ทึ่งขึ้นไหม?", CX, 380, 90, color=RED, sc=ap(t, L[2]), rot=-3)
         return
-    if t < L[4] - 0.2:   # อะไรมั่นคงไม่เปลี่ยนแปลง
+    if t < L[5] - 0.2:   # อะไรมั่นคงไม่เปลี่ยนแปลง
         space_panel(g, 60, 420, 1020, 1240)
         stars(g, t, 18, (60, 420, 1020, 1240))
         light_beam(g, 100, 820, 980, 1.0, t, 16)
         for i, s in enumerate(("?", "?", "?")):
-            g.label(s, 280 + i * 260, 640 + 20 * math.sin(t * 3 + i), 110, color=GOLD2, sc=ap(t, L[3] + i * 0.3))
-        g.label("อะไรที่ไม่เปลี่ยนแปลง?", CX, 360, 72, sc=ap(t, L[2]), rot=-3)
+            g.label(s, 280 + i * 260, 640 + 20 * math.sin(t * 3 + i), 110, color=GOLD2, sc=ap(t, L[4] + i * 0.3))
+        g.label("อะไรที่ไม่เปลี่ยนแปลง?", CX, 360, 72, sc=ap(t, L[3]), rot=-3)
         return
-    with g.at(CX + 120, 650, ap(t, L[4])):   # ชวนคอมเมนต์
+    with g.at(CX + 120, 650, ap(t, L[5])):   # ชวนคอมเมนต์
         g.bubble(0, 0, 520, 240, WHITE, tail=(-1, 1))
         for i in range(3):
             g.circle(-110 + i * 110, 0, 24 + 6 * math.sin(t * 6 - i), INK, 0)
     person(g, 260, GROUND, KID, 0.9, mood="smile", pose="wave", turn=0.3, seed=40, talk=True)
-    ruler(g, 700, 1180, 420, 0.8 * ap(t, L[4] + 0.4), label="1 เมตร")
-    g.label("คอมเมนต์คุยกันได้เลย!", 700, 1000, 58, color=RED, sc=ap(t, L[4] + 0.4))
+    ruler(g, 700, 1180, 420, 0.8 * ap(t, L[5] + 0.4), label="1 เมตร")
+    g.label("คอมเมนต์คุยกันได้เลย!", 700, 1000, 58, color=RED, sc=ap(t, L[5] + 0.4))
 
 
 SCENES = {
