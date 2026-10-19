@@ -19,7 +19,7 @@ SHADOW = (0.12, 0.09, 0.1)
 
 @dataclass
 class Look:
-    hair: str = "short"            # nixon, crew, slick, part, full, bald
+    hair: str = "short"            # nixon, crew, slick, part, full, bald, buzz, braids, bun, afro
     hair_col: tuple = hexc("#3a2f28")
     skin: tuple = SKIN_R
     suit: tuple = hexc("#30343c")
@@ -31,12 +31,18 @@ class Look:
     jowls: float = 0.0             # แก้มย้อย (นิกสัน)
     nose: float = 1.0              # ความยาว/ขนาดจมูก
     brow: float = 1.0              # ความหนาคิ้ว
-    glasses: str = ""              # "" / thick / thin
+    glasses: str = ""              # "" / thick / thin / shades (แว่นดำ)
     stubble: float = 0.0
     age: float = 0.5               # ริ้วรอย
     build: float = 1.0             # ความกว้างลำตัว
     height: float = 1.0
     pin: bool = False              # เข็มกลัดธงชาติ
+    outfit: str = "suit"           # suit / tee / hoodie / flannel / dress
+    pants: tuple = None            # None = สีเดียวกับเสื้อสูท
+    shoes: tuple = None            # None = รองเท้าหนังดำ
+    facial: str = ""               # "" / mustache / goatee (หนวด+เครา)
+    headsc: float = 1.0            # ขนาดหัว (เด็ก ~1.4)
+    print_txt: str = ""            # ตัวหนังสือบนอกเสื้อยืด
 
 
 def _shade(c, fill, lw=4.5, dark=0.24, horiz=True, stroke=INK):
@@ -113,17 +119,26 @@ def _arm(c, look, sx, ang, hand, lw, t):
     sh = (sx * 112 * look.build, -705)
     el = (sh[0] + sx * math.sin(a1) * L1, sh[1] + math.cos(a1) * L1)
     wr = (el[0] + sx * math.sin(a2) * L2, el[1] + math.cos(a2) * L2)
-    for wd, col in ((50 + 2 * lw, INK), (50, look.suit)):
-        _stroke(c, [sh, el, wr], wd, col, smooth=False)
-    # ไล่เงาที่แขนเสื้อ
-    _stroke(c, [(sh[0] + sx * 10, sh[1] + 6), (el[0] + sx * 10, el[1]), (wr[0] + sx * 8, wr[1])], 13, (*SHADOW, 0.22), smooth=False)
-    # ข้อมือเสื้อเชิ้ต
     d = (wr[0] - el[0], wr[1] - el[1])
     n = math.hypot(*d) or 1
     ux, uy = d[0] / n, d[1] / n
-    cf = (wr[0] - ux * 4, wr[1] - uy * 4)
-    _stroke(c, [(cf[0] - uy * 24, cf[1] + ux * 24), (cf[0] + uy * 24, cf[1] - ux * 24)], 14 + 2 * lw, INK, smooth=False)
-    _stroke(c, [(cf[0] - uy * 24, cf[1] + ux * 24), (cf[0] + uy * 24, cf[1] - ux * 24)], 14, look.shirt, smooth=False)
+    if look.outfit in ("tee", "dress"):   # แขนสั้น: ต้นแขนเป็นผ้า ท่อนล่างเป็นผิว
+        for wd, col in ((38 + 2 * lw, INK), (38, look.skin)):
+            _stroke(c, [sh, el, wr], wd, col, smooth=False)
+        mid = (lerp(sh[0], el[0], 0.62), lerp(sh[1], el[1], 0.62))
+        for wd, col in ((54 + 2 * lw, INK), (54, look.suit)):
+            _stroke(c, [sh, mid], wd, col, smooth=False)
+        _stroke(c, [(sh[0] + sx * 10, sh[1] + 6), (mid[0] + sx * 10, mid[1])], 13, (*SHADOW, 0.22), smooth=False)
+    else:
+        for wd, col in ((50 + 2 * lw, INK), (50, look.suit)):
+            _stroke(c, [sh, el, wr], wd, col, smooth=False)
+        # ไล่เงาที่แขนเสื้อ
+        _stroke(c, [(sh[0] + sx * 10, sh[1] + 6), (el[0] + sx * 10, el[1]), (wr[0] + sx * 8, wr[1])], 13, (*SHADOW, 0.22), smooth=False)
+        # ข้อมือเสื้อเชิ้ต / ปลายแขนเสื้อ
+        cf = (wr[0] - ux * 4, wr[1] - uy * 4)
+        cuff = look.shirt if look.outfit == "suit" else look.suit
+        _stroke(c, [(cf[0] - uy * 24, cf[1] + ux * 24), (cf[0] + uy * 24, cf[1] - ux * 24)], 14 + 2 * lw, INK, smooth=False)
+        _stroke(c, [(cf[0] - uy * 24, cf[1] + ux * 24), (cf[0] + uy * 24, cf[1] - ux * 24)], 14, cuff, smooth=False)
     _hand(c, look, wr[0] + ux * 22, wr[1] + uy * 22, math.atan2(uy, ux), hand, sx, lw)
     return wr
 
@@ -225,7 +240,7 @@ def head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw
     # แก้มแดงอ่อน
     for sx in (-1, 1):
         rg = cairo.RadialGradient(sx * w * 0.55 + fx, 26, 0, sx * w * 0.55 + fx, 26, 22)
-        rg.add_color_stop_rgba(0, 0.9, 0.45, 0.4, 0.22)
+        rg.add_color_stop_rgba(0, 0.9, 0.45, 0.4, 0.22 * min(1.0, sum(look.skin[:3]) / 2.4))
         rg.add_color_stop_rgba(1, 0.9, 0.45, 0.4, 0.0)
         c.set_source(rg)
         c.paint()
@@ -284,7 +299,18 @@ def head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw
         _stroke(c, [(ex - sx * bw, by + 2 + tilt * (-0.6)), mid, outer], 6.5 * look.brow, look.hair_col if look.hair != "bald" else INK)
 
     # แว่น
-    if look.glasses:
+    if look.glasses == "shades":   # แว่นกันแดดเลนส์ดำ
+        for sx in (-1, 1):
+            ex = sx * w * 0.38 + fx
+            _smooth_path(c, [(ex - 26, ey - 14), (ex + 26, ey - 14), (ex + 22, ey + 10), (ex, ey + 15), (ex - 22, ey + 10)])
+            c.set_source_rgba(0.1, 0.1, 0.12, 1)
+            c.fill_preserve()
+            c.set_source_rgba(*INK)
+            c.set_line_width(4)
+            c.stroke()
+            _stroke(c, [(ex - 14, ey - 8), (ex - 4, ey - 10)], 3, WHITE, 0.5)
+        _stroke(c, [(-w * 0.38 + fx + 26, ey - 10), (w * 0.38 + fx - 26, ey - 10)], 5, INK, smooth=False)
+    elif look.glasses:
         th = 6 if look.glasses == "thick" else 3
         for sx in (-1, 1):
             ex = sx * w * 0.38 + fx
@@ -346,13 +372,32 @@ def head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw
         else:
             _stroke(c, [(mx - mw, my - curve * 0.4), (mx, my + curve * 0.6), (mx + mw, my - curve * 0.4)], 4)
         _stroke(c, [(mx - 9, my + 13), (mx + 9, my + 13)], 2.5, INK, 0.35)   # ริมฝีปากล่าง
+    # หนวด / เครา
+    if look.facial:
+        hc = look.hair_col
+        _smooth_path(c, [(mx - mw - 2, my - 5), (mx - 10, my - 15), (mx, my - 13), (mx + 10, my - 15), (mx + mw + 2, my - 5),
+                         (mx + 10, my - 9), (mx - 10, my - 9)])
+        c.set_source_rgba(*hc)
+        c.fill()
+        if look.facial == "goatee":
+            _smooth_path(c, [(mx - 12, my + 20), (mx + 12, my + 20), (mx + 8, 84), (mx - 8, 84)])
+            c.set_source_rgba(*hc)
+            c.fill()
 
     # ผมด้านหน้า
     _hair_front(c, look, w, lw, fx)
 
 
 def _hair_back(c, look, w, lw):
-    if look.hair in ("nixon", "full", "part"):
+    if look.hair == "afro":
+        c.new_path()
+        c.arc(0, -40, w * 1.45, 0, 2 * math.pi)
+        _shade(c, look.hair_col, lw, 0.3)
+    if look.hair == "bun":
+        c.new_path()
+        c.arc(0, -108, w * 0.45, 0, 2 * math.pi)
+        _shade(c, look.hair_col, lw, 0.3)
+    if look.hair in ("nixon", "full", "part", "bun"):
         _smooth_path(c, [(-w * 1.06, 10), (-w * 1.1, -50), (-w * 0.7, -92), (0, -100), (w * 0.7, -92), (w * 1.1, -50), (w * 1.06, 10),
                          (w * 0.9, -10), (-w * 0.9, -10)])
         _shade(c, look.hair_col, lw, 0.3)
@@ -395,6 +440,34 @@ def _hair_front(c, look, w, lw, fx):
         _shade(c, col, lw, 0.3)
         for k in (-0.6, -0.2, 0.2, 0.6):
             _stroke(c, [(w * k, -60), (w * k * 1.1, -84), (w * k * 0.9, -98)], 2.2, WHITE, 0.22)
+    elif h in ("buzz", "afro"):
+        _smooth_path(c, [(-w * 1.02, -16), (-w * 1.0, -64), (-w * 0.6, -94), (0, -98), (w * 0.6, -94), (w * 1.0, -64), (w * 1.02, -16),
+                         (w * 0.9, -46), (w * 0.5, -64), (0, -68), (-w * 0.5, -64), (-w * 0.9, -46)])
+        _shade(c, col, 0 if h == "afro" else lw, 0.25)
+    elif h == "bun":
+        _smooth_path(c, [(-w * 1.05, 10), (-w * 1.04, -58), (-w * 0.6, -98), (0, -102), (w * 0.6, -98), (w * 1.04, -58), (w * 1.05, 10),
+                         (w * 0.92, -20), (w * 0.6, -58), (0, -64), (-w * 0.6, -58), (-w * 0.92, -20)])
+        _shade(c, col, lw, 0.3)
+    elif h == "braids":
+        # ผมถักเปียแนบหัว (คอร์นโรว์) + เปียยาวสองข้างห้อยถึงอก (สนูป ด็อกก์ยุค 90)
+        _smooth_path(c, [(-w * 1.03, -6), (-w * 1.0, -62), (-w * 0.6, -96), (0, -102), (w * 0.6, -96), (w * 1.0, -62), (w * 1.03, -6),
+                         (w * 0.9, -40), (w * 0.5, -62), (0, -66), (-w * 0.5, -62), (-w * 0.9, -40)])
+        _shade(c, col, lw, 0.3)
+        for k in (-0.6, -0.3, 0, 0.3, 0.6):
+            _stroke(c, [(w * k, -64), (w * k * 1.05, -84), (w * k * 0.9, -100)], 2.5, WHITE, 0.3)
+        for sx in (-1, 1):
+            for i in range(9):
+                bx, by = sx * (w * 1.02 + 6 * math.sin(i * 0.5)), -10 + i * 24
+                c.save()
+                c.translate(bx, by)
+                c.rotate(sx * 0.35)
+                c.scale(0.75, 1)
+                c.new_path()
+                c.arc(0, 0, 14, 0, 2 * math.pi)
+                c.restore()
+                _shade(c, col, 3, 0.3)
+            _rr(c, sx * (w * 1.02 + 6 * math.sin(4.0)) - 9, 200, 18, 12, 4)
+            _shade(c, hexc("#c8553d"), 3, 0)
     elif h == "short":
         _smooth_path(c, [(-w * 1.03, -10), (-w * 1.0, -62), (-w * 0.6, -96), (0, -100), (w * 0.6, -96), (w * 1.0, -62), (w * 1.03, -10),
                          (w * 0.9, -40), (w * 0.4, -64), (-w * 0.4, -64), (-w * 0.9, -40)])
@@ -428,8 +501,12 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
         c.rotate(math.radians(lean))
         if legs:
             for sx in (-1, 1):
-                _smooth_path(c, [(sx * 6, -440), (sx * 96, -440), (sx * 84, -200), (sx * 74, -40), (sx * 22, -40), (sx * 16, -220)])
-                _shade(c, look.suit, lw, 0.3)
+                if look.outfit == "dress":
+                    _rr(c, sx * 48 - 20, -260, 40, 230, 16)
+                    _shade(c, look.skin, lw, 0.3)
+                else:
+                    _smooth_path(c, [(sx * 6, -440), (sx * 96, -440), (sx * 84, -200), (sx * 74, -40), (sx * 22, -40), (sx * 16, -220)])
+                    _shade(c, look.pants or look.suit, lw, 0.3)
                 c.save()
                 c.translate(sx * 52, -22)
                 c.scale(1.35, 0.6)
@@ -439,8 +516,8 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
                 c.line_to(sx * 8 - 40, 10)
                 c.close_path()
                 c.restore()
-                _shade(c, hexc("#211d1a"), lw, 0.0)
-                _stroke(c, [(sx * 32, -42), (sx * 70, -42)], 3, WHITE, 0.25)
+                _shade(c, look.shoes or hexc("#211d1a"), lw, 0.0)
+                _stroke(c, [(sx * 32, -42), (sx * 70, -42)], 3, WHITE if not look.shoes else INK, 0.25)
         c.save()
         c.translate(0, -430)
         c.scale(1, breath)
@@ -450,6 +527,80 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
         back_first = ang[0][0] < 60
         if back_first:
             _arm(c, look, -1, ang[0], hands[0], lw, g.t)
+        if look.outfit == "suit":
+            _suit(c, look, bw, lw)
+        else:
+            _casual(c, look, bw, lw)
+        if not back_first:
+            _arm(c, look, -1, ang[0], hands[0], lw, g.t)
+        with g.at(0, -842 + 100 * (look.headsc - 1), look.headsc):
+            head(g, look, mood, talk, turn, look_at, seed, lw)
+        _arm(c, look, 1, ang[1], hands[1], lw, g.t)
+        c.restore()
+        c.restore()
+
+
+def _casual(c, look, bw, lw):
+    """เสื้อลำลอง: tee / hoodie / flannel / dress"""
+    o, col = look.outfit, look.suit
+    if o == "hoodie":   # ฮู้ดด้านหลังคอ
+        _smooth_path(c, [(-90, -760), (0, -800), (90, -760), (70, -720), (-70, -720)])
+        _shade(c, col, lw, 0.35)
+    hem = -406 if o != "dress" else -250
+    wide = 1.0 if o != "dress" else 1.35
+    _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
+                     (112 * bw * wide, hem - 8), (0, hem), (-112 * bw * wide, hem - 8), (-110 * bw, -480), (-124 * bw, -650)])
+    _shade(c, col, lw, 0.32)
+    if o == "flannel":   # ลายสก็อต
+        c.save()
+        _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
+                         (112 * bw, hem - 8), (0, hem), (-112 * bw, hem - 8), (-110 * bw, -480), (-124 * bw, -650)])
+        c.clip()
+        for i in range(-6, 7):
+            _stroke(c, [(i * 40, -760), (i * 40, -400)], 9, (0.1, 0.1, 0.15, 0.25), smooth=False)
+        for j in range(10):
+            _stroke(c, [(-140, -740 + j * 36), (140, -740 + j * 36)], 9, (0.1, 0.1, 0.15, 0.25), smooth=False)
+        c.restore()
+        for sx in (-1, 1):   # ปกเสื้อ
+            c.new_path()
+            for p in [(sx * 40, -756), (sx * 4, -700), (sx * 70, -712)]:
+                c.line_to(*p)
+            c.close_path()
+            _shade(c, col, 3.5, 0.2)
+        _stroke(c, [(0, -700), (0, -410)], 3, INK, 0.5, smooth=False)
+        for by in (-660, -590, -520, -450):
+            c.new_path()
+            c.arc(8, by, 5, 0, 2 * math.pi)
+            _shade(c, WHITE, 2, 0)
+    else:   # คอกลม
+        c.new_path()
+        c.save()
+        c.translate(0, -752)
+        c.scale(1, 0.55)
+        c.arc(0, 0, 42, 0, math.pi)
+        c.restore()
+        c.set_source_rgba(*INK)
+        c.set_line_width(4)
+        c.stroke()
+    if o == "hoodie":
+        for sx in (-1, 1):
+            _stroke(c, [(sx * 20, -735), (sx * 22, -640)], 4, WHITE, smooth=False)
+        _smooth_path(c, [(-70, -560), (70, -560), (90, -450), (-90, -450)])
+        _shade(c, col, 3.5, 0.3)
+    if look.print_txt:
+        from gfx import text_sprite
+        surf, _, tw, th = text_sprite(look.print_txt, 44, "kanit", look.shirt, 0)
+        c.save()
+        c.translate(0, -620)
+        k = min(1.0, 160 / max(tw, 1))
+        c.scale(k, k)
+        c.set_source_surface(surf, -tw / 2, -th / 2)
+        c.paint()
+        c.restore()
+
+
+def _suit(c, look, bw, lw):
+    if True:
         # ลำตัว (เสื้อสูท)
         _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (128 * bw, -650), (114 * bw, -470),
                          (108 * bw, -414), (0, -406), (-108 * bw, -414), (-114 * bw, -470), (-128 * bw, -650)])
@@ -496,13 +647,6 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
             _shade(c, hexc("#c8553d"), 2, 0)
             _rr(c, -98, -664, 10, 7, 1)
             _shade(c, hexc("#3f6496"), 0, 0)
-        if not back_first:
-            _arm(c, look, -1, ang[0], hands[0], lw, g.t)
-        with g.at(0, -842):
-            head(g, look, mood, talk, turn, look_at, seed, lw)
-        _arm(c, look, 1, ang[1], hands[1], lw, g.t)
-        c.restore()
-        c.restore()
 
 
 def bust(g, x, y, look, sc=1.0, **kw):
