@@ -66,6 +66,9 @@
   3.8-flash หมดโควตา -> 3.1-flash-tts-preview ตอบ 400 กับก้อนยาว → ใช้ `TTS_MAX_CHARS=800 ... --model gemini-3.1-flash-tts-preview`
 - ตรวจซับทุกบรรทัด: `EPISODE=<ตอน> python3 src/check_sync.py <whisper>` (whisper-small ภาษาไทยถอดผิดบ่อย
   ให้ดูว่า "ต้นบรรทัดที่ได้ยิน" ตรงกับบทไหม ไม่ต้องสนคะแนนต่ำจากคำสะกดเพี้ยน)
+- **โมเดลอ่านซ้ำบางบรรทัดได้**: ถ้า check_sync ✗ ติดกันหลายบรรทัดและ "ได้ยิน" = บรรทัดก่อนหน้า → ซับเลื่อน
+  ถอดเสียงทีละช่วงหาจุดซ้ำ แล้วตัดออกจาก narration.wav (`ffmpeg -af aselect='not(between(t,a,b))'`) + เลื่อน timeline.json
+  (ตอน reynolds1976) หรือลบแคชก้อนนั้นแล้วสร้างใหม่ (ตอน crichton1942)
 - ใช้ `--tempo 1.1` ได้ บท ~37 บรรทัด ≈ 110 วิ (ประมาณ 3 วิ/บรรทัด) — เพดาน 3 นาที ≈ 55 บรรทัด
 - ถ้าเจ้าของช่องส่งไฟล์เสียงมาเอง → `./make.sh voice.wav [tempo]` (`src/voice.py`)
 - ห้ามขอ API key ในแชท ให้ใส่เป็น secret ของ environment
