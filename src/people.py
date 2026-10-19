@@ -19,7 +19,7 @@ SHADOW = (0.12, 0.09, 0.1)
 
 @dataclass
 class Look:
-    hair: str = "short"            # nixon, crew, slick, part, full, bald, buzz, braids, bun, afro
+    hair: str = "short"            # nixon, crew, slick, part, full, bald, buzz, braids, bun, afro, long, edison
     hair_col: tuple = hexc("#3a2f28")
     skin: tuple = SKIN_R
     suit: tuple = hexc("#30343c")
@@ -441,6 +441,22 @@ def _hat(c, look, w, lw):
         _shade(c, hexc("#5a4a3a"), 3, 0)
         _smooth_path(c, [(-w * 1.9, -76), (-w * 1.5, -94), (w * 1.5, -94), (w * 1.9, -76), (w * 1.5, -66), (-w * 1.5, -66)])
         _shade(c, hexc("#2c2a2e"), lw, 0.0)
+    elif look.hat == "helmet":   # หมวกเหล็กทหาร (สารวัตรทหาร MP)
+        _smooth_path(c, [(-w * 1.25, -30), (-w * 1.15, -100), (-w * 0.6, -150), (w * 0.6, -150), (w * 1.15, -100),
+                         (w * 1.25, -30), (w * 1.3, -20), (-w * 1.3, -20)])
+        _shade(c, look.hat_trim or hexc("#4f5a3a"), lw, 0.25)
+        _rr(c, -w * 1.08, -86, w * 2.16, 36, 6)
+        _shade(c, WHITE, 3, 0.05)
+        from gfx import text_sprite
+        surf, _, tw, th = text_sprite("MP", 30, "kanit", INK, 0)
+        c.save()
+        c.translate(0, -68)
+        c.set_source_surface(surf, -tw / 2, -th / 2)
+        c.paint()
+        c.restore()
+    elif look.hat == "headband":   # ผ้าคาดหัวฮิปปี้
+        _rr(c, -w * 1.06, -62, w * 2.12, 18, 8)
+        _shade(c, look.hat_trim or hexc("#c8553d"), 3, 0.1)
     elif look.hat == "beret":
         _smooth_path(c, [(-w * 1.15, -70), (-w * 1.0, -120), (-w * 0.2, -150), (w * 0.9, -128), (w * 1.1, -80), (0, -76)])
         _shade(c, look.hat_trim or hexc("#2b2622"), lw, 0.2)
@@ -457,6 +473,10 @@ def _hair_back(c, look, w, lw):
     if look.hair == "afro":
         c.new_path()
         c.arc(0, -40, w * 1.45, 0, 2 * math.pi)
+        _shade(c, look.hair_col, lw, 0.3)
+    if look.hair == "long":   # ผมยาวตรงประบ่า (ยุค 60s)
+        _smooth_path(c, [(-w * 1.12, -40), (-w * 0.8, -100), (0, -108), (w * 0.8, -100), (w * 1.12, -40),
+                         (w * 1.22, 120), (w * 1.0, 170), (w * 0.6, 150), (-w * 0.6, 150), (-w * 1.0, 170), (-w * 1.22, 120)])
         _shade(c, look.hair_col, lw, 0.3)
     if look.hair == "bun":
         c.new_path()
@@ -517,7 +537,7 @@ def _hair_front(c, look, w, lw, fx):
         _smooth_path(c, [(-w * 1.02, -16), (-w * 1.0, -64), (-w * 0.6, -94), (0, -98), (w * 0.6, -94), (w * 1.0, -64), (w * 1.02, -16),
                          (w * 0.9, -46), (w * 0.5, -64), (0, -68), (-w * 0.5, -64), (-w * 0.9, -46)])
         _shade(c, col, 0 if h == "afro" else lw, 0.25)
-    elif h == "bun":
+    elif h in ("bun", "long"):
         _smooth_path(c, [(-w * 1.05, 10), (-w * 1.04, -58), (-w * 0.6, -98), (0, -102), (w * 0.6, -98), (w * 1.04, -58), (w * 1.05, 10),
                          (w * 0.92, -20), (w * 0.6, -58), (0, -64), (-w * 0.6, -58), (-w * 0.92, -20)])
         _shade(c, col, lw, 0.3)
@@ -732,6 +752,13 @@ def _casual(c, look, bw, lw):
             c.line_to(*p)
         c.close_path()
         _shade(c, hexc("#c8553d"), 3.5, 0.2)
+    if o == "fatigue":   # ชุดสนามทหาร: กระเป๋าอก 2 ใบ กระดุม
+        for sx in (-1, 1):
+            _rr(c, sx * 62 - 30, -660, 60, 56, 6)
+            _shade(c, col, 3.5, 0.3)
+        _stroke(c, [(0, -740), (0, -410)], 3, INK, 0.5, smooth=False)
+        _rr(c, -118 * bw, -470, 236 * bw, 26, 4)   # เข็มขัด
+        _shade(c, hexc("#3a3a2a"), 3, 0)
     if o == "flannel":   # ลายสก็อต
         c.save()
         _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
