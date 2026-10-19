@@ -50,6 +50,7 @@ class Look:
     empty_arm: int = 0             # แขนด้วน: -1 = แขนข้างซ้ายจอ (แขนขวาของตัวละคร), 1 = ขวาจอ
     collar: tuple = None           # สีปกคอตั้ง (เสื้อนายทหาร)
     cape: tuple = None             # ผ้าคลุมไหล่ยาว (สีผ้า) เช่น แฟรงก์ ลอยด์ ไรต์
+    sash: tuple = None             # สายสะพายพาดไหล่ขวา (สีผ้า) — ใช้กับ outfit="tunic"
 
 
 def _shade(c, fill, lw=4.5, dark=0.24, horiz=True, stroke=INK):
@@ -667,6 +668,8 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
             _naval(c, look, bw, lw)
         elif look.outfit == "vest":
             _vest(c, look, bw, lw)
+        elif look.outfit == "tunic":
+            _tunic(c, look, bw, lw)
         else:
             _casual(c, look, bw, lw)
         if not back_first and look.empty_arm != -1:
@@ -755,6 +758,45 @@ def _naval(c, look, bw, lw):
             c.line_to(*p)
         c.close_path()
         _shade(c, hexc("#d9d5cc"), 2.5, 0.2)
+
+
+def _tunic(c, look, bw, lw):
+    """เสื้อราชปะแตน/เครื่องแบบปกตั้งแบบสยาม: กระดุมทองแถวเดียว ปกตั้งขอบทอง สายสะพาย ดาวเครื่องราชฯ"""
+    gold = hexc("#e3a92b")
+    _smooth_path(c, [(-118 * bw, -722), (-60, -756), (60, -756), (118 * bw, -722), (128 * bw, -650), (118 * bw, -470),
+                     (112 * bw, -400), (0, -392), (-112 * bw, -400), (-118 * bw, -470), (-128 * bw, -650)])
+    _shade(c, look.suit, lw, 0.22)
+    _stroke(c, [(0, -752), (0, -396)], 3, INK, 0.5, smooth=False)
+    for by in range(-720, -420, 56):
+        c.new_path()
+        c.arc(0, by, 7, 0, 2 * math.pi)
+        _shade(c, gold, 2.5, 0)
+    _stroke(c, [(-112 * bw, -470), (112 * bw, -470)], 6, gold, 0.8, smooth=False)   # เข็มขัด
+    if look.sash:
+        c.new_path()
+        for p in [(-96, -748), (-56, -756), (112 * bw, -474), (112 * bw, -430), (76, -430)]:
+            c.line_to(*p)
+        c.close_path()
+        _shade(c, look.sash, 3.5, 0.2)
+        _stroke(c, [(-76, -752), (100 * bw, -452)], 3, gold, 0.7, smooth=False)
+    c.new_path()   # ปกคอตั้ง
+    for p in [(-60, -756), (-56, -800), (56, -800), (60, -756)]:
+        c.line_to(*p)
+    c.close_path()
+    _shade(c, look.collar or look.suit, 4, 0.15)
+    _stroke(c, [(-56, -790), (56, -790)], 5, gold, smooth=False)
+    for i in range(look.stars):
+        sx, sy = 70 - (i % 2) * 34, -680 + (i // 2) * 46
+        pts = []
+        for k in range(16):
+            r = 18 if k % 2 == 0 else 7
+            a = math.pi * k / 8
+            pts.append((sx + r * math.cos(a), sy + r * math.sin(a)))
+        c.new_path()
+        for p in pts:
+            c.line_to(*p)
+        c.close_path()
+        _shade(c, gold if i == 0 else hexc("#d9d5cc"), 2.5, 0.2)
 
 
 def _casual(c, look, bw, lw):
