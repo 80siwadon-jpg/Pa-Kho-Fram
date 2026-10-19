@@ -31,7 +31,7 @@ class Look:
     jowls: float = 0.0             # แก้มย้อย (นิกสัน)
     nose: float = 1.0              # ความยาว/ขนาดจมูก
     brow: float = 1.0              # ความหนาคิ้ว
-    glasses: str = ""              # "" / thick / thin / round (กรอบกลมหนา) / shades (แว่นดำ)
+    glasses: str = ""              # "" / thick / thin / round (กรอบกลมหนา) / roundthin (กลมบาง) / shades (แว่นดำ)
     stubble: float = 0.0
     age: float = 0.5               # ริ้วรอย
     build: float = 1.0             # ความกว้างลำตัว
@@ -331,7 +331,7 @@ def head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw
         th = 6 if look.glasses in ("thick", "round") else 3
         for sx in (-1, 1):
             ex = sx * w * 0.38 + fx
-            if look.glasses == "round":   # กรอบกลมหนา (ซาร์ตร์)
+            if look.glasses in ("round", "roundthin"):   # กรอบกลม: หนา (ซาร์ตร์) / บางไร้ขอบ (จ็อบส์)
                 c.new_path()
                 c.arc(ex, ey - 1, 22, 0, 2 * math.pi)
             else:
@@ -887,6 +887,11 @@ def _casual(c, look, bw, lw):
             c.new_path()
             c.arc(8, by, 5, 0, 2 * math.pi)
             _shade(c, WHITE, 2, 0)
+    elif o == "turtleneck":   # คอเต่า (สตีฟ จ็อบส์) — ปกพับม้วนรอบคอ
+        _rr(c, -46, -800, 92, 62, 16)
+        _shade(c, col, lw, 0.3)
+        for k in (-778, -760):
+            _stroke(c, [(-40, k), (40, k)], 3, (1, 1, 1), 0.18, smooth=False)
     else:   # คอกลม
         c.new_path()
         c.save()

@@ -37,7 +37,7 @@ Language: Thai.
 {text}"""
 SR_IN = 24000
 PAUSE = "\n[short pause]\n"
-MAX_CHARS = 1400
+MAX_CHARS = int(os.environ.get("TTS_MAX_CHARS", 1400))   # บางโมเดล (3.1-preview) รับก้อนยาวไม่ได้ -> ลดลง
 
 
 class QuotaError(Exception):
