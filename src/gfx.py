@@ -355,6 +355,11 @@ class Draw:
         c.restore()
         return w * sc, h * sc
 
+    def label(self, s, x, y, size, fnt="kanit", color=INK, sc=1.0, rot=0.0, a=1.0, maxw=None, anchor="c"):
+        """ตัวหนังสือบนภาพ: มีขอบขาวรอบตัวอักษร อ่านง่ายแม้ทับภาพ (ซับด้านล่างไม่ใช้ขอบ)"""
+        return self.text(s, x, y, size, fnt, color, sc, rot, a, stroke=max(6, int(size * 0.14)),
+                         stroke_color=WHITE, maxw=maxw, anchor=anchor)
+
     # ---- faces & characters (origin = กลางหัว สำหรับ face, ปลายเท้า สำหรับตัวละคร)
     def face(self, R, mood="happy", look=(0, 0), seed=0, mouth_dy=0.0):
         t = self.t
