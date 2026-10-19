@@ -43,6 +43,12 @@ class Look:
     facial: str = ""               # "" / mustache / goatee (หนวด+เครา)
     headsc: float = 1.0            # ขนาดหัว (เด็ก ~1.4)
     print_txt: str = ""            # ตัวหนังสือบนอกเสื้อยืด
+    hat: str = ""                  # "" / bicorne (หมวกสองแฉกสวมขวาง) / tricorn
+    hat_trim: tuple = None         # ขอบหมวกสีทอง (None = ไม่มี)
+    epaulettes: bool = False       # อินทรธนูทอง
+    stars: int = 0                 # ดาวเครื่องราชฯ ที่อกซ้าย
+    empty_arm: int = 0             # แขนด้วน: -1 = แขนข้างซ้ายจอ (แขนขวาของตัวละคร), 1 = ขวาจอ
+    collar: tuple = None           # สีปกคอตั้ง (เสื้อนายทหาร)
 
 
 def _shade(c, fill, lw=4.5, dark=0.24, horiz=True, stroke=INK):
@@ -109,6 +115,10 @@ POSES = {
     "wave":  ((6, 2), (100, 172), "open", "palm"),
     "shrug": ((28, 100), (28, 100), "palm", "palm"),
     "slam":  ((6, 2), (30, 60), "open", "fist"),
+    "tuck":  ((6, 2), (14, -112), "open", "hidden"),     # มือสอดในเสื้อกั๊ก (นโปเลียน)
+    "salute": ((6, 2), (-20, -175), "open", "palm"),
+    "spy":   ((6, 2), (60, 150), "open", "fist"),       # ส่องกล้องส่องทางไกล
+    "lie":   ((6, 2), (6, 2), "open", "open"),
 }
 
 
@@ -150,6 +160,9 @@ def _hand(c, look, x, y, ang, kind, sx, lw):
     if sx < 0:
         c.scale(-1, 1)
     sk = look.skin
+    if kind == "hidden":
+        c.restore()
+        return
     if kind == "fist":
         c.new_path()
         c.rectangle(-22, -14, 44, 36)
@@ -386,6 +399,26 @@ def head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw
 
     # ผมด้านหน้า
     _hair_front(c, look, w, lw, fx)
+    if look.hat:
+        _hat(c, look, w, lw)
+
+
+def _hat(c, look, w, lw):
+    if look.hat == "bicorne":   # หมวกสองแฉกสวมขวางไหล่
+        _smooth_path(c, [(-w * 1.75, -58), (-w * 1.0, -92), (-w * 0.4, -160), (w * 0.4, -160), (w * 1.0, -92), (w * 1.75, -58),
+                         (w * 0.8, -78), (0, -86), (-w * 0.8, -78)])
+        _shade(c, hexc("#1b1916"), lw, 0.0)
+        if look.hat_trim:
+            _stroke(c, [(-w * 1.7, -60), (-w * 0.8, -80), (0, -88), (w * 0.8, -80), (w * 1.7, -60)], 7, look.hat_trim)
+        c.new_path()
+        c.arc(w * 0.55, -110, 16, 0, 2 * math.pi)
+        _shade(c, look.hat_trim or hexc("#c8553d"), 3, 0)
+    elif look.hat == "tricorn":
+        c.new_path()
+        for p in [(-w * 1.4, -70), (0, -150), (w * 1.4, -70), (w * 0.6, -60), (0, -84), (-w * 0.6, -60)]:
+            c.line_to(*p)
+        c.close_path()
+        _shade(c, hexc("#1b1916"), lw, 0.0)
 
 
 def _hair_back(c, look, w, lw):
@@ -468,6 +501,18 @@ def _hair_front(c, look, w, lw, fx):
                 _shade(c, col, 3, 0.3)
             _rr(c, sx * (w * 1.02 + 6 * math.sin(4.0)) - 9, 200, 18, 12, 4)
             _shade(c, hexc("#c8553d"), 3, 0)
+    elif h == "nelson":
+        # ผมสีเทาขาว หวีปัดหน้าเป็นปอย ข้างหูฟู
+        _smooth_path(c, [(-w * 1.1, 20), (-w * 1.08, -50), (-w * 0.6, -98), (0, -104), (w * 0.6, -98), (w * 1.08, -50), (w * 1.1, 20),
+                         (w * 0.92, 0), (w * 0.85, -44), (w * 0.3, -50), (-w * 0.1, -70), (-w * 0.5, -56), (-w * 0.9, -40), (-w * 0.94, 0)])
+        _shade(c, col, lw, 0.25)
+        for k in (-0.5, -0.1, 0.3):
+            _stroke(c, [(w * k, -56), (w * (k + 0.2), -80), (w * (k + 0.5), -92)], 2.2, INK, 0.25)
+    elif h == "napoleon":
+        # ผมดำสั้น ปอยหน้าม้าตกลงหน้าผาก
+        _smooth_path(c, [(-w * 1.03, -10), (-w * 1.0, -62), (-w * 0.6, -96), (0, -100), (w * 0.6, -96), (w * 1.0, -62), (w * 1.03, -10),
+                         (w * 0.9, -40), (w * 0.3, -46), (w * 0.05, -34), (-w * 0.2, -48), (-w * 0.6, -56), (-w * 0.9, -40)])
+        _shade(c, col, lw, 0.3)
     elif h == "short":
         _smooth_path(c, [(-w * 1.03, -10), (-w * 1.0, -62), (-w * 0.6, -96), (0, -100), (w * 0.6, -96), (w * 1.0, -62), (w * 1.03, -10),
                          (w * 0.9, -40), (w * 0.4, -64), (-w * 0.4, -64), (-w * 0.9, -40)])
@@ -525,19 +570,94 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
         bw = look.build
         # แขนด้านหลัง (ข้างซ้ายจอ) วาดก่อนลำตัวถ้ายกขึ้นน้อย
         back_first = ang[0][0] < 60
-        if back_first:
+        if back_first and look.empty_arm != -1:
             _arm(c, look, -1, ang[0], hands[0], lw, g.t)
         if look.outfit == "suit":
             _suit(c, look, bw, lw)
+        elif look.outfit == "naval":
+            _naval(c, look, bw, lw)
         else:
             _casual(c, look, bw, lw)
-        if not back_first:
+        if not back_first and look.empty_arm != -1:
             _arm(c, look, -1, ang[0], hands[0], lw, g.t)
+        for sx in (-1, 1):
+            if look.empty_arm == sx:   # แขนเสื้อว่างพับกลัดไว้ที่อก
+                for wd, col in ((44 + 2 * lw, INK), (44, look.suit)):
+                    _stroke(c, [(sx * 108, -700), (sx * 112, -600), (sx * 40, -575)], wd, col)
+                c.new_path()
+                c.arc(sx * 30, -575, 9, 0, 2 * math.pi)
+                _shade(c, hexc("#e3a92b"), 3, 0)
+        if look.epaulettes:
+            for sx in (-1, 1):
+                _rr(c, sx * 112 - 38, -742, 76, 30, 12)
+                _shade(c, hexc("#e3a92b"), 4, 0.2)
+                for k in range(6):
+                    _stroke(c, [(sx * 112 - 32 + k * 13, -714), (sx * 112 - 32 + k * 13, -690)], 5, hexc("#c99320"), smooth=False)
         with g.at(0, -842 + 100 * (look.headsc - 1), look.headsc):
             head(g, look, mood, talk, turn, look_at, seed, lw)
-        _arm(c, look, 1, ang[1], hands[1], lw, g.t)
+        if look.empty_arm != 1:
+            _arm(c, look, 1, ang[1], hands[1], lw, g.t)
         c.restore()
         c.restore()
+
+
+def _naval(c, look, bw, lw):
+    """เสื้อนายทหารเรือ/ทหารยุคนโปเลียน: โค้ตหางยาว ปกตั้ง เสื้อกั๊กขาว กระดุมทอง"""
+    col = look.suit
+    gold = hexc("#e3a92b")
+    # หางเสื้อด้านหลังยาวถึงเข่า
+    for sx in (-1, 1):
+        c.new_path()
+        for p in [(sx * 30, -440), (sx * 120 * bw, -440), (sx * 128 * bw, -240), (sx * 70, -250)]:
+            c.line_to(*p)
+        c.close_path()
+        _shade(c, col, lw, 0.4)
+    # ลำตัวโค้ต
+    _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (128 * bw, -650), (118 * bw, -470),
+                     (110 * bw, -420), (0, -410), (-110 * bw, -420), (-118 * bw, -470), (-128 * bw, -650)])
+    _shade(c, col, lw, 0.32)
+    # เสื้อกั๊กขาวตรงกลาง
+    c.new_path()
+    for p in [(-46, -752), (46, -752), (54, -470), (40, -420), (-40, -420), (-54, -470)]:
+        c.line_to(*p)
+    c.close_path()
+    _shade(c, look.shirt, lw, 0.12)
+    for by in range(-700, -440, 52):
+        c.new_path()
+        c.arc(0, by, 5, 0, 2 * math.pi)
+        _shade(c, gold, 2, 0)
+    # ขอบหน้าโค้ตสีทอง + กระดุมทองสองแถว
+    for sx in (-1, 1):
+        _stroke(c, [(sx * 48, -748), (sx * 58, -600), (sx * 58, -425)], 6, gold, smooth=False)
+        for by in range(-700, -480, 60):
+            c.new_path()
+            c.arc(sx * 78, by, 7, 0, 2 * math.pi)
+            _shade(c, gold, 2.5, 0)
+    # ปกคอตั้ง
+    ccol = look.collar or col
+    for sx in (-1, 1):
+        c.new_path()
+        for p in [(sx * 20, -790), (sx * 70, -778), (sx * 66, -742), (sx * 22, -752)]:
+            c.line_to(*p)
+        c.close_path()
+        _shade(c, ccol, 4, 0.2)
+        _stroke(c, [(sx * 22, -786), (sx * 68, -775)], 4, gold, smooth=False)
+    # ผ้าผูกคอขาว
+    _rr(c, -26, -790, 52, 40, 12)
+    _shade(c, WHITE, 3.5, 0.1)
+    # ดาวเครื่องราชฯ ที่อกซ้าย (ขวาจอ)
+    for i in range(look.stars):
+        sx, sy = 92 - (i % 2) * 30, -660 + (i // 2) * 44
+        pts = []
+        for k in range(16):
+            r = 17 if k % 2 == 0 else 7
+            a = math.pi * k / 8
+            pts.append((sx + r * math.cos(a), sy + r * math.sin(a)))
+        c.new_path()
+        for p in pts:
+            c.line_to(*p)
+        c.close_path()
+        _shade(c, hexc("#d9d5cc"), 2.5, 0.2)
 
 
 def _casual(c, look, bw, lw):
@@ -551,6 +671,19 @@ def _casual(c, look, bw, lw):
     _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
                      (112 * bw * wide, hem - 8), (0, hem), (-112 * bw * wide, hem - 8), (-110 * bw, -480), (-124 * bw, -650)])
     _shade(c, col, lw, 0.32)
+    if o == "stripe":   # เสื้อลายขวางทหารเรือ
+        c.save()
+        _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
+                         (112 * bw, hem - 8), (0, hem), (-112 * bw, hem - 8), (-110 * bw, -480), (-124 * bw, -650)])
+        c.clip()
+        for j in range(9):
+            _stroke(c, [(-140, -730 + j * 40), (140, -730 + j * 40)], 14, hexc("#2b3f63"), 0.85, smooth=False)
+        c.restore()
+        c.new_path()
+        for p in [(-50, -752), (50, -752), (0, -690)]:
+            c.line_to(*p)
+        c.close_path()
+        _shade(c, hexc("#c8553d"), 3.5, 0.2)
     if o == "flannel":   # ลายสก็อต
         c.save()
         _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
