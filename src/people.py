@@ -51,6 +51,8 @@ class Look:
     collar: tuple = None           # สีปกคอตั้ง (เสื้อนายทหาร)
     cape: tuple = None             # ผ้าคลุมไหล่ยาว (สีผ้า) เช่น แฟรงก์ ลอยด์ ไรต์
     goggles: bool = False          # แว่นกันฝุ่นคาดบนหมวก (hat="peaked" แบบรอมเมล)
+    shorts: bool = False           # กางเกงขาสั้น + ถุงเท้ายาว (ชุดนักฟุตบอล; สีถุงเท้า = socks)
+    socks: tuple = None
     sash: tuple = None             # สายสะพายพาดไหล่ขวา (สีผ้า) — ใช้กับ outfit="tunic"
 
 
@@ -667,6 +669,13 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
                 elif look.outfit == "dress":
                     _rr(c, sx * 48 - 20, -260, 40, 230, 16)
                     _shade(c, look.skin, lw, 0.3)
+                elif look.shorts:   # ขาเปล่า + ถุงเท้ายาว + กางเกงขาสั้น
+                    _rr(c, sx * 48 - 22, -330, 44, 300, 18)
+                    _shade(c, look.skin, lw, 0.3)
+                    _rr(c, sx * 48 - 24, -190, 48, 160, 10)
+                    _shade(c, look.socks or WHITE, lw, 0.2)
+                    _smooth_path(c, [(sx * 6, -440), (sx * 100, -440), (sx * 96, -300), (sx * 12, -300)])
+                    _shade(c, look.pants or look.suit, lw, 0.3)
                 else:
                     _smooth_path(c, [(sx * 6, -440), (sx * 96, -440), (sx * 84, -200), (sx * 74, -40), (sx * 22, -40), (sx * 16, -220)])
                     _shade(c, look.pants or look.suit, lw, 0.3)
@@ -909,7 +918,7 @@ def _casual(c, look, bw, lw):
         _shade(c, col, 3.5, 0.3)
     if look.print_txt:
         from gfx import text_sprite
-        surf, _, tw, th = text_sprite(look.print_txt, 44, "kanit", look.shirt, 0)
+        surf, _, tw, th = text_sprite(look.print_txt, 44 if len(look.print_txt) > 2 else 90, "kanit", look.shirt, 0)
         c.save()
         c.translate(0, -620)
         k = min(1.0, 160 / max(tw, 1))
