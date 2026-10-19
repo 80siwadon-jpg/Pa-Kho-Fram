@@ -656,7 +656,7 @@ class Draw:
         import photos   # ภาพจริงของบุคคล (ถ้ามีใน photos.json "tag") ขึ้นเหนือป้ายชื่อ
         pid = photos.portrait(name)
         if pid:
-            px = min(max(x, 230), 850)
+            px = min(max(x, 230), 780)
             py = max(y - 330, 450)
             with self.alpha(a):
                 photos.photo(self, pid, px, py, 300, 360, -4 * side, pop(t, t0 + 0.15, 0.4), 1.0 + 0.03 * (t - t0))

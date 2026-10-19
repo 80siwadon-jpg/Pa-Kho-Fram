@@ -73,15 +73,17 @@ def s_hook(g, t, L, d):
     g.sunburst(CX, 760, 220, 620, 22, t * 12, 12, (1, 0.9, 0.6, 0.7))
     person(g, CX, GROUND, LEIA, 0.92, mood="smile", pose="wave", turn=0.15, seed=1)
     g.label('"แครี ฟิชเชอร์"!', CX, 370, 96, color=GOLDTXT, sc=k, rot=-4)
-    g.name_tag(t, L[6] + 0.3, 800, 1120, "แครี ฟิชเชอร์", "นักแสดง · นักเขียน (1956–2016)", side=-1)
+    g.name_tag(t, L[6] - 0.1, 800, 1120, "แครี ฟิชเชอร์", "นักแสดง · นักเขียน (1956–2016)", side=-1)
 
 
 # ------------------------------------------------------------------ 2. pain
 def s_pain(g, t, L, d):
     g.ground(GROUND, WHITE)
-    if t < L[1] - 0.2:   # เบื้องหลังรอยยิ้ม
-        with g.at(CX, 760, 1.9):
-            head(g, LEIA, "smile" if t < 2.0 else "sad", turn=0.1)
+    if t < L[1] - 0.2:   # เบื้องหลังรอยยิ้ม (ภาพจริง ถ้ามี)
+        if not photo(g, "carrie_portrait", CX, 790, 720, 600, -2, ap(t, 0.2), 1.0 + 0.04 * t,
+                     label="แครี ฟิชเชอร์ ในบทเจ้าหญิงเลอา"):
+            with g.at(CX, 760, 1.9):
+                head(g, LEIA, "smile" if t < 2.0 else "sad", turn=0.1)
         g.label("เบื้องหลังรอยยิ้ม...", CX, 360, 80, sc=ap(t, 0.2), rot=-3)
         return
     if t < L[2] - 0.2:   # มรสุมชีวิต
