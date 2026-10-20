@@ -26,7 +26,7 @@ BRASS = hexc("#d4a23a")
 # มุมแขน (องศาจากแนวดิ่งลง, + = กางออกนอกตัว) ต้นแขน, ปลายแขน — ข้างซ้ายจอ, ข้างขวาจอ
 POSES = {
     "idle":    ((38, -42), (8, 4)),
-    "point":   ((8, 4), (150, 178)),
+    "point":   ((8, 4), (128, 168)),
     "wave":    ((8, 4), (115, 168)),
     "think":   ((8, 4), (-25, 175)),
     "hold":    ((40, -93), (40, -93)),
@@ -35,6 +35,8 @@ POSES = {
 }
 L1, L2 = 150, 145
 SHOULDER_Y = -720
+HEAD_SC = 1.3      # หัวโตแบบการ์ตูน (เจ้าของช่องขอ) — ขยายรอบจุดคอ
+NECK_Y = -735
 
 
 def _arm_pts(sx, a1, a2):
@@ -381,10 +383,11 @@ def host(g, x, y, sc=1.0, expr="smile", pose="idle", t=0.0, prop=None, talk=Fals
             else:
                 _arm(g, -1, a_l1, a_l2, "open", t)
                 _arm(g, 1, a_r1, a_r2 + 4 * math.sin(t * 6) * (pose == "wave"), hands.get(pose, "open"), t)
-            with g.at(0, bob * 0.7, 1, 2 * math.sin(t * 1.7 + seed)):
-                _head(g, expr, t, talk, look, seed)
+            with g.at(0, NECK_Y + bob * 0.7, HEAD_SC, 2 * math.sin(t * 1.7 + seed)):
+                with g.at(0, -NECK_Y):
+                    _head(g, expr, t, talk, look, seed)
         if pose in ("think",) and expr == "curious":
-            g.label("?", 150, -1060, 90, color=hexc("#7a4a9a"))
+            g.label("?", 170, -1160, 90, color=hexc("#7a4a9a"))
 
 
 def host_head(g, x, y, sc=1.0, expr="smile", t=0.0, talk=False, look=(0, 0), seed=0):
