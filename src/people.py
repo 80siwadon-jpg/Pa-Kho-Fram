@@ -54,6 +54,7 @@ class Look:
     shorts: bool = False           # กางเกงขาสั้น + ถุงเท้ายาว (ชุดนักฟุตบอล; สีถุงเท้า = socks)
     socks: tuple = None
     band: bool = False             # ปกลูกไม้ขาวแบนคลุมไหล่ (ศตวรรษที่ 17)
+    cravat: bool = False           # ผ้าผูกคอขาวห้อยหน้าอก (ปลายศตวรรษที่ 17)
     sash: tuple = None             # สายสะพายพาดไหล่ขวา (สีผ้า) — ใช้กับ outfit="tunic"
 
 
@@ -533,6 +534,21 @@ def _hair_back(c, look, w, lw):
                 c.set_source_rgba(1, 1, 1, 0.22)
                 c.set_line_width(2.5)
                 c.stroke()
+    if look.hair == "periwig":   # วิกผมลอนยาวฟูเลยไหล่ (ปลายศตวรรษที่ 17 เช่น เลเวนฮุก) — แยกสองข้าง เห็นคอ/ผ้าผูกคอตรงกลาง
+        _smooth_path(c, [(-w * 1.15, -40), (-w * 0.85, -104), (0, -114), (w * 0.85, -104), (w * 1.15, -40), (w * 1.1, 40),
+                         (-w * 1.1, 40)])
+        _shade(c, look.hair_col, lw, 0.3)
+        for sx in (-1, 1):
+            _smooth_path(c, [(sx * w * 0.75, -60), (sx * w * 1.2, -50), (sx * w * 1.55, 60), (sx * w * 1.75, 180),
+                             (sx * w * 1.45, 240), (sx * w * 0.9, 220), (sx * w * 0.66, 120), (sx * w * 0.7, 20)])
+            _shade(c, look.hair_col, lw, 0.3 if sx < 0 else 0.42)
+            for i in range(6):   # ลอนผม
+                cx, cy = sx * w * (1.12 + 0.12 * (i % 2)), -10 + i * 38
+                c.new_path()
+                c.arc(cx, cy, 14, 0.5 if sx > 0 else 2.6, 0.5 + 3.6 if sx > 0 else 2.6 + 3.6)
+                c.set_source_rgba(*INK[:3], 0.35)
+                c.set_line_width(2.5)
+                c.stroke()
     if look.hair == "long":   # ผมยาวตรงประบ่า (ยุค 60s)
         _smooth_path(c, [(-w * 1.12, -40), (-w * 0.8, -100), (0, -108), (w * 0.8, -100), (w * 1.12, -40),
                          (w * 1.22, 120), (w * 1.0, 170), (w * 0.6, 150), (-w * 0.6, 150), (-w * 1.0, 170), (-w * 1.22, 120)])
@@ -608,6 +624,16 @@ def _hair_front(c, look, w, lw, fx):
                          (w * 0.92, -20), (w * 0.6, -60), (0, -78), (-w * 0.6, -60), (-w * 0.92, -20)])
         _shade(c, col, lw, 0.3)
         _stroke(c, [(0, -104), (0, -80)], 3, WHITE, 0.35)
+    elif h == "periwig":
+        _smooth_path(c, [(-w * 1.12, 16), (-w * 1.08, -60), (-w * 0.6, -104), (0, -110), (w * 0.6, -104), (w * 1.08, -60), (w * 1.12, 16),
+                         (w * 0.94, -18), (w * 0.62, -66), (0, -58), (-w * 0.62, -66), (-w * 0.94, -18)])
+        _shade(c, col, lw, 0.3)
+        for k in (-0.55, -0.15, 0.25, 0.65):
+            c.new_path()
+            c.arc(w * k, -88, 12, 3.4, 6.0)
+            c.set_source_rgba(*INK[:3], 0.3)
+            c.set_line_width(2.5)
+            c.stroke()
     elif h in ("bun", "long"):
         _smooth_path(c, [(-w * 1.05, 10), (-w * 1.04, -58), (-w * 0.6, -98), (0, -102), (w * 0.6, -98), (w * 1.04, -58), (w * 1.05, 10),
                          (w * 0.92, -20), (w * 0.6, -58), (0, -64), (-w * 0.6, -58), (-w * 0.92, -20)])
@@ -740,6 +766,12 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
                 c.set_source_rgba(*INK[:3], 0.5)
                 c.set_line_width(2.5)
                 c.stroke()
+        if look.cravat:   # ผ้าผูกคอขาวห้อยลงหน้าอก
+            _smooth_path(c, [(-34, -770), (34, -770), (26, -730), (40, -650), (0, -636), (-40, -650), (-26, -730)])
+            _shade(c, WHITE, 4, 0.12)
+            _stroke(c, [(-20, -720), (20, -720)], 3, INK, 0.4)
+            for k in (-1, 1):
+                _stroke(c, [(k * 12, -712), (k * 18, -660)], 2.5, INK, 0.3)
         if look.cape:   # ผ้าคลุมไหล่ ทับลำตัว ปลายบานถึงเข่า
             for sx in (-1, 1):
                 _smooth_path(c, [(sx * 40, -756), (sx * 134 * bw, -720), (sx * 168 * bw, -420), (sx * 176 * bw, -250),
