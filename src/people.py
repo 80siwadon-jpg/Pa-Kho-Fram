@@ -486,6 +486,26 @@ def _hat(c, look, w, lw):
         _smooth_path(c, [(-w * 0.95, -82), (w * 0.95, -82), (w * 0.75, -58), (-w * 0.75, -58)])
         _shade(c, hexc("#1b1916"), 3.5, 0)
         c.translate(0, -20)
+    elif look.hat == "garrison":   # หมวกหนีบทหาร (overseas cap) เอียงข้าง + ดาวยศ (hat_trim = สีหมวก)
+        col = look.hat_trim or hexc("#5a5a3a")
+        c.translate(0, 18)
+        _smooth_path(c, [(-w * 1.05, -78), (-w * 0.95, -128), (-w * 0.2, -140), (w * 0.85, -132), (w * 1.08, -88),
+                         (w * 0.6, -96), (-w * 0.6, -92)])
+        _shade(c, col, lw, 0.25)
+        _stroke(c, [(-w * 0.9, -112), (w * 0.95, -110)], 2.5, INK, 0.35)
+        if look.stars:
+            from gfx import Draw   # noqa: F401
+            c.save()
+            c.translate(-w * 0.55, -112)
+            c.new_path()
+            for k in range(10):
+                r = 11 if k % 2 == 0 else 4.5
+                a_ = -math.pi / 2 + k * math.pi / 5
+                c.line_to(r * math.cos(a_), r * math.sin(a_))
+            c.close_path()
+            _shade(c, hexc("#d9dde3"), 2, 0)
+            c.restore()
+        c.translate(0, -18)
     elif look.hat == "beret":
         _smooth_path(c, [(-w * 1.15, -70), (-w * 1.0, -120), (-w * 0.2, -150), (w * 0.9, -128), (w * 1.1, -80), (0, -76)])
         _shade(c, look.hat_trim or hexc("#2b2622"), lw, 0.2)
