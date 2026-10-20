@@ -467,6 +467,25 @@ def _hat(c, look, w, lw):
     elif look.hat == "headband":   # ผ้าคาดหัวฮิปปี้
         _rr(c, -w * 1.06, -62, w * 2.12, 18, 8)
         _shade(c, look.hat_trim or hexc("#c8553d"), 3, 0.1)
+    elif look.hat == "busby":   # หมวกขนสัตว์ทรงกระบอกของทหารม้าฮุสซาร์ + พู่ขนนก
+        _smooth_path(c, [(-w * 0.98, -70), (-w * 1.02, -200), (-w * 0.7, -224), (w * 0.7, -224), (w * 1.02, -200),
+                         (w * 0.98, -70)])
+        _shade(c, hexc("#2b2420"), lw, 0.2)
+        for k in range(5):
+            _stroke(c, [(-w * 0.8 + k * w * 0.4, -90), (-w * 0.75 + k * w * 0.4, -200)], 2, WHITE, 0.15)
+        _smooth_path(c, [(w * 0.3, -210), (w * 0.2, -300), (w * 0.5, -330), (w * 0.6, -230)])
+        _shade(c, look.hat_trim or WHITE, 3.5, 0.15)   # พู่ขนนก
+        _smooth_path(c, [(w * 0.3, -205), (w * 0.85, -120), (w * 0.95, -60), (w * 0.8, -80), (w * 0.55, -190)])
+        _shade(c, hexc("#c0283a"), 3, 0.1)   # ถุงผ้าแดงห้อยข้าง
+    elif look.hat == "kepi":   # หมวกเคปิทหารฝรั่งเศส (ทรงกระบอกเอียง กะบังหน้า)
+        c.translate(0, 20)
+        _smooth_path(c, [(-w * 0.95, -80), (-w * 0.8, -190), (w * 0.95, -180), (w * 0.95, -80)])
+        _shade(c, look.hat_trim or hexc("#b8283a"), lw, 0.25)
+        _rr(c, -w * 0.97, -110, w * 1.94, 30, 4)
+        _shade(c, hexc("#2b2f5a"), 3.5, 0.1)
+        _smooth_path(c, [(-w * 0.95, -82), (w * 0.95, -82), (w * 0.75, -58), (-w * 0.75, -58)])
+        _shade(c, hexc("#1b1916"), 3.5, 0)
+        c.translate(0, -20)
     elif look.hat == "beret":
         _smooth_path(c, [(-w * 1.15, -70), (-w * 1.0, -120), (-w * 0.2, -150), (w * 0.9, -128), (w * 1.1, -80), (0, -76)])
         _shade(c, look.hat_trim or hexc("#2b2622"), lw, 0.2)
