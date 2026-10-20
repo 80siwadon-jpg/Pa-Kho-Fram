@@ -68,9 +68,9 @@ def s_promo(g, t, L, d):
         title(g, t, L[0], "25 ตุลาคม 1940", GOLDTXT, 92)
         return
     if t < L[2] - 0.2:   # โรสเวลต์ลงนาม
-        flag_us(g, 820, 520, 220, t)
-        person(g, 330, GROUND, FDR, 0.85, mood="smile", pose="sign", turn=0.4, seed=4)
-        order_paper(g, 640, 1000, 0.7, -6, e_io(seg(t, L[1] + 0.6, L[2] - 0.4)))
+        flag_us(g, 700, 520, 200, t)
+        person(g, 300, GROUND, FDR, 0.85, mood="smile", pose="sign", turn=0.4, seed=4)
+        order_paper(g, 580, 1000, 0.7, -6, e_io(seg(t, L[1] + 0.6, L[2] - 0.4)))
         g.name_tag(t, L[1] + 0.1, 330, 1150, "แฟรงกลิน ดี. โรสเวลต์", "ประธานาธิบดีสหรัฐฯ")
         title(g, t, L[1], "โรสเวลต์ลงนามครั้งประวัติศาสตร์", NAVY, 74)
         return
@@ -85,8 +85,8 @@ def s_promo(g, t, L, d):
             shoulder(g, 760, 820, 0.75, 1, ap(t, L[3] + 0.3), t)
             title(g, t, L[3], "ขึ้นเป็น \"นายพลจัตวา\"!", GOLDTXT, 88)
         return
-    sign_board(g, 300, GROUND, 1.0, -4 + 4 * math.sin(t * 2.3))   # ยุคเหยียดสีผิวถูกกฎหมาย
-    sign_board(g, 780, GROUND, 0.85, 5 + 4 * math.sin(t * 2 + 1), "COLORED", hexc("#4a4a52"))
+    sign_board(g, 320, GROUND, 0.85, -4 + 4 * math.sin(t * 2.3))   # ยุคเหยียดสีผิวถูกกฎหมาย
+    sign_board(g, 760, GROUND, 0.8, 5 + 4 * math.sin(t * 2 + 1), "COLORED", hexc("#4a4a52"))
     g.line([(CX, 520), (CX, GROUND)], 10, RED, amp=0)
     title(g, t, L[4], "ยุคที่การเหยียดสีผิวยังถูกกฎหมาย!", RED, 72)
 

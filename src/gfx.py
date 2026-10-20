@@ -355,9 +355,38 @@ class Draw:
         c.restore()
         return w * sc, h * sc
 
+    # ขอบปลอดภัยของตัวหนังสือในพิกัดฉาก (ก่อนกล้อง): กล้องซูม 1.12 + แพน ±60 + ปุ่มด้านขวาของแอป
+    SAFE_X0, SAFE_X1 = 100, 960
+
+    def _fit(self, s, x, y, size, fnt, sc, stroke, maxw, anchor):
+        """ย่อตัวหนังสือที่ยาวเกินขอบปลอดภัย (คิดในพิกัดฉาก ไม่ขึ้นกับการขยับกล้อง)"""
+        m = getattr(self, "scene_m", None)
+        if m is None or sc <= 0.001:
+            return sc
+        _, _, w, _ = text_sprite(s, size, fnt, INK, stroke, WHITE, maxw)
+        ox = {"c": -w / 2, "l": 0, "r": -w}[anchor]
+        c = self.c
+        inv = cairo.Matrix(*m)
+        inv.invert()
+        xs = []
+        for lx in (ox, ox + w):
+            dx, dy = c.user_to_device(x + lx * sc, y)
+            xs.append(inv.transform_point(dx, dy)[0])
+        cx, _ = inv.transform_point(*c.user_to_device(x, y))
+        f = 1.0
+        lo, hi = min(xs), max(xs)
+        if lo < self.SAFE_X0 and cx - lo > 1:
+            f = min(f, max(0.3, (cx - self.SAFE_X0) / (cx - lo)))
+        if hi > self.SAFE_X1 and hi - cx > 1:
+            f = min(f, max(0.3, (self.SAFE_X1 - cx) / (hi - cx)))
+        return sc * f
+
     def label(self, s, x, y, size, fnt="kanit", color=INK, sc=1.0, rot=0.0, a=1.0, maxw=None, anchor="c"):
-        """ตัวหนังสือบนภาพ: มีขอบขาวรอบตัวอักษร อ่านง่ายแม้ทับภาพ (ซับด้านล่างไม่ใช้ขอบ)"""
-        return self.text(s, x, y, size, fnt, color, sc, rot, a, stroke=max(6, int(size * 0.14)),
+        """ตัวหนังสือบนภาพ: มีขอบขาวรอบตัวอักษร อ่านง่ายแม้ทับภาพ (ซับด้านล่างไม่ใช้ขอบ)
+        ย่ออัตโนมัติถ้ายาวเกินขอบปลอดภัยของจอ"""
+        stroke = max(6, int(size * 0.14))
+        sc = self._fit(s, x, y, size, fnt, sc, stroke, maxw, anchor)
+        return self.text(s, x, y, size, fnt, color, sc, rot, a, stroke=stroke,
                          stroke_color=WHITE, maxw=maxw, anchor=anchor)
 
     # ---- faces & characters (origin = กลางหัว สำหรับ face, ปลายเท้า สำหรับตัวละคร)
@@ -663,6 +692,7 @@ class Draw:
         _, _, w1, _ = text_sprite(name, 50, "kanit")
         _, _, w2, _ = text_sprite(role, 36, "kanitm", GREY)
         w = max(w1, w2) + 40
+        x = min(max(x, self.SAFE_X0 + w / 2), self.SAFE_X1 - w / 2)   # ป้ายชื่อไม่ล้นขอบจอ
         with self.alpha(a):
             with self.at(x, y, k):
                 self.rrect(-w / 2, -66, w, 132, 28, WHITE, 6)

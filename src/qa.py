@@ -119,12 +119,17 @@ def main():
     small_w, small_h = 270, 480
     sy = int(small_h * SAFE_Y / H) + 2
     prev, still_since, black, intrusions = None, 0.0, [], []
+    edge_hits = []   # ของ (เส้นดำ/ตัวหนังสือ) แตะขอบซ้าย-ขวาของจอ = ล้นออกนอกจอ
+    ey0, ey1 = int(small_h * 0.06), int(small_h * 0.58)
     still_spans = []
     for i, f in enumerate(frames(a.video, 10, small_w, small_h)):
         t = i / 10
         g = f.mean(axis=2)
         if g.mean() < 20:
             black.append(t)
+        strip = np.concatenate([g[ey0:ey1, :3], g[ey0:ey1, -3:]], axis=1)
+        if (strip < 170).mean() > 0.02:
+            edge_hits.append(t)
         bottom = g[sy:, :]
         if (bottom < 200).mean() > 0.002:
             intrusions.append(t)
@@ -146,6 +151,15 @@ def main():
                 spans.append((s, x))
                 s = y
         problems.append("มีภาพในพื้นที่ล่าง 25%: " + ", ".join(f"{p:.1f}-{q:.1f}s" for p, q in spans[:8]))
+    if edge_hits:
+        spans, s0 = [], edge_hits[0]
+        for x, y in zip(edge_hits, edge_hits[1:] + [None]):
+            if y is None or y - x > 0.15:
+                if x - s0 >= 0.3:   # แตะขอบสั้น ๆ ตอนทรานซิชัน/whip ไม่นับ
+                    spans.append((s0, x))
+                s0 = y
+        if spans:
+            problems.append("ภาพล้นขอบจอซ้าย/ขวา: " + ", ".join(f"{p:.1f}-{q:.1f}s" for p, q in spans[:10]))
     for p0, p1 in still_spans:
         problems.append(f"ภาพค้างไม่ขยับ {p1 - p0:.1f} วิ ที่ {p0:.1f}-{p1:.1f}s")
 

@@ -92,6 +92,7 @@ def draw_scene(g, s, t, extra=(1.0, 1.0, 0, 0)):
     a, ez, ex, ey = extra
     cam = (z * ez, dx + ex, dy + ey, rot)
     with g.alpha(a):
+        g.scene_m = tuple(g.c.get_matrix())   # พิกัดฉากก่อนกล้อง (ใช้ย่อตัวหนังสือไม่ให้ล้นขอบ)
         with camera.apply(g, cam):
             SCENES[s["name"]](g, lt, s["L"], d)
 
