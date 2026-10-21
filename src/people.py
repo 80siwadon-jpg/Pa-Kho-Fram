@@ -40,7 +40,7 @@ class Look:
     outfit: str = "suit"           # suit / tee / hoodie / flannel / dress / naval / stripe / vest (เชิ้ต+กั๊ก)
     pants: tuple = None            # None = สีเดียวกับเสื้อสูท
     shoes: tuple = None            # None = รองเท้าหนังดำ
-    facial: str = ""               # "" / mustache / goatee / beard (เคราเต็มคาง)
+    facial: str = ""               # "" / mustache / goatee / beard (เคราเต็มคาง) / walrus (หนวดดกห้อย)
     headsc: float = 1.0            # ขนาดหัว (เด็ก ~1.4)
     print_txt: str = ""            # ตัวหนังสือบนอกเสื้อยืด
     hat: str = ""                  # "" / bicorne / tricorn / tophat / bowler / porkpie (ปีกกว้างทรงแบน) / beret
@@ -415,6 +415,13 @@ def head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw
             _smooth_path(c, [(mx - 12, my + 20), (mx + 12, my + 20), (mx + 8, 84), (mx - 8, 84)])
             c.set_source_rgba(*hc)
             c.fill()
+        if look.facial == "walrus":   # หนวดดกแบบวอลรัส ปลายห้อยปิดมุมปาก (ธีโอดอร์ โรสเวลต์)
+            _smooth_path(c, [(mx - mw * 1.55, my + 16), (mx - mw * 1.3, my - 8), (mx - 16, my - 24), (mx, my - 20),
+                             (mx + 16, my - 24), (mx + mw * 1.3, my - 8), (mx + mw * 1.55, my + 16),
+                             (mx + mw * 1.05, my + 6), (mx, my + 4), (mx - mw * 1.05, my + 6)])
+            _shade(c, hc, 3.5, 0.2)
+            for k in (-2, -1, 1, 2):
+                _stroke(c, [(mx + k * 10, my - 14), (mx + k * 13, my)], 2, INK, 0.35)
 
     # ผมด้านหน้า
     _hair_front(c, look, w, lw, fx)
