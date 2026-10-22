@@ -118,7 +118,10 @@ def s_polio(g, t, L, d):
         title(g, t, L[4], "อัมพาต แขนขาลีบ", INK, 92)
         return
     iron_lung(g, 480, GROUND - 20, 1.0, t)   # ปอดเหล็ก
-    g.label("\"ปอดเหล็ก\"", 480, 680, 80, color=NAVY, sc=ap(t, L[5] + 0.4))
+    g.label("\"ปอดเหล็ก\"", 480, 680 + 15 * math.sin(t * 2), 80, color=NAVY, sc=ap(t, L[5] + 0.4))
+    for i in range(3):
+        u = (t * 0.8 + i / 3) % 1
+        g.arc(860, 1000, 40 + 60 * u, -50, 50, 6, (*GREY[:3], 1 - u))
     title(g, t, L[5], "ต้องนอนในปอดเหล็กเพื่อหายใจ", INK, 80)
 
 
@@ -159,7 +162,9 @@ def s_lab(g, t, L, d):
         for i, lk in enumerate(SONS):
             person(g, 600 + i * 150, GROUND, lk, 0.72, mood="smile", pose="wave" if i == 1 else "down",
                    turn=-0.2, seed=21 + i)
-        syringe(g, 300, 660, 0.6, -20, 1 - seg(t, L[5] + 1.0, L[5] + 3.0))
+        syringe(g, 300 + 20 * math.sin(t * 3), 660, 0.6, -20, 1 - seg(t, L[5] + 1.0, L[5] + 5.5))
+        for i in range(3):
+            heart(g, 600 + i * 150, 760 - 15 * math.sin(t * 3 + i), 22)
         title(g, t, L[5], "ฉีดให้ครอบครัวและตัวเองก่อน!", RED, 80)
         return
     if t < L[7] - 0.2:   # ทดลองในเด็กเกือบสองล้านคน
@@ -247,7 +252,7 @@ def s_legacy(g, t, L, d):
             title(g, t, L[3], "โปลิโอเกือบหมดไปจากโลก", GREEN, 84)
         return
     salk(g, 280, SALK, 0.8, "smile", "stop", 0.4)   # ถ้าจดจะรวย 7,000 ล้านดอลลาร์
-    money(g, 760, 1150, 1.3, t)
+    money(g, 700, 1150, 0.95, t)
     if t < L[5] - 0.2:
         title(g, t, L[4], "ถ้าเขาจดสิทธิบัตร...", INK, 90)
     elif t < L[6] - 0.2:
@@ -286,7 +291,7 @@ def s_outro(g, t, L, d):
         title(g, t, L[0], "รู้สึกอย่างไรกันบ้าง?", INK, 92)
         return
     if t < L[4] - 0.2:   # เสียสละ vs จดสิทธิบัตร
-        vial(g, CX, 1000, 1.0, 0, glow=1.0)
+        vial(g, CX, 1000 - 20 * math.sin(t * 2), 1.0, 5 * math.sin(t * 1.5), glow=0.8 + 0.2 * math.sin(t * 4))
         if t > L[2] - 0.2:
             with g.at(250, 760, ap(t, L[2]), -6):
                 g.rrect(-180, -90, 360, 180, 20, WHITE, 8, stroke=GREEN)
