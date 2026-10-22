@@ -12,3 +12,5 @@ _spec.loader.exec_module(_mod)
 SCENES = [(name, [ln if isinstance(ln, tuple) else (ln, ln.replace("\u200b", " ")) for ln in lines])
           for name, lines in _mod.SCENES]
 HEADER = getattr(_mod, "HEADER", "วันนี้ในอดีต")
+# หน้าปกโพลารอยด์: {"date": "28 ตุลาคม 1886", "title": "...", "photo": "<id>" หรือไม่ใส่, "art": <วินาที>}
+COVER = getattr(_mod, "COVER", None)

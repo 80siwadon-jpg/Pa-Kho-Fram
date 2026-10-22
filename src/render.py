@@ -17,7 +17,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
 import camera  # noqa: E402
 from gfx import INK, PAPER, W, H, Draw, e_back, e_io, text_sprite  # noqa: E402
-from script_data import HEADER  # noqa: E402
+from script_data import COVER, HEADER  # noqa: E402
 import importlib.util  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,6 +28,7 @@ _spec.loader.exec_module(_scenes)
 SCENES, NO_IRIS = _scenes.SCENES, getattr(_scenes, "NO_IRIS", set())
 CAMERA = getattr(_scenes, "CAMERA", {})
 TRANSITIONS = getattr(_scenes, "TRANSITIONS", {})
+OWN_COVER = getattr(_scenes, "OWN_COVER", False)   # ตอนที่วาดหน้าปกเองใน s_hook
 
 BUILD = os.path.join(ROOT, "build", EPISODE)
 FPS = 60
@@ -97,6 +98,40 @@ def draw_scene(g, s, t, extra=(1.0, 1.0, 0, 0)):
             SCENES[s["name"]](g, lt, s["L"], d)
 
 
+def cover_overlay(g, t, tl):
+    """หน้าปกโพลารอยด์เปิดคลิป (COVER ใน script.py): เฟรมแรก = ปก ค้างถึงบรรทัดที่ 2 แล้วปลิวออกขวา
+    ไม่มีภาพจริง -> ภาพในกรอบ = ฉากการ์ตูนของตอนเอง ณ เวลา COVER["art"] (ตัดส่วนหัวข้อด้านบนออก)"""
+    if not COVER or OWN_COVER:
+        return
+    import photos
+    t_out = tl["lines"][1]["start"] + 0.4 if len(tl["lines"]) > 1 else 1.5
+    if t >= t_out + 0.3:
+        return
+    u = e_io(min(max((t - t_out) / 0.3, 0), 1))
+    if u == 0:
+        g.c.save()
+        g.c.rectangle(-W, -H, 3 * W, 3 * H)
+        g.c.set_source_rgba(*PAPER)
+        g.c.fill()
+        g.c.restore()
+    art_t = COVER.get("art")
+
+    def art(g2, w, h):
+        if art_t is None:
+            return
+        _, s = scene_at(tl, art_t)
+        lt = art_t - s["start"]
+        sc = w / COVER.get("crop_w", 860)
+        cy = COVER.get("crop_y", 960)
+        with g2.at(0, 0, sc):
+            g2.c.translate(-W / 2, -cy)
+            g2.scene_m = tuple(g2.c.get_matrix())
+            SCENES[s["name"]](g2, lt, s["L"], s["end"] - s["start"])
+    g.label("วันนี้ในอดีต", W / 2, 250 - 300 * u, 80, rot=-2)
+    photos.cover(g, COVER.get("photo"), COVER["date"], COVER["title"], 1 - 0.4 * u, -2 - 25 * u,
+                 zoom=1.0 + 0.04 * t, x=W / 2 + 900 * u, y=690, w=600, h=700, fallback=art)
+
+
 def render_frame(frame):
     tl = TL
     t = frame / FPS
@@ -140,6 +175,7 @@ def render_frame(frame):
     else:
         draw_scene(g, s, t)
     header(g, t, tl)
+    cover_overlay(g, t, tl)
     ctx.restore()
     subtitles(g, t, tl)
     surf.flush()

@@ -348,3 +348,4 @@ SCENES = {
     "lesson": s_lesson, "outro": s_outro,
 }
 NO_IRIS = set()
+OWN_COVER = True   # หน้าปกวาดเองใน s_hook
