@@ -9,7 +9,7 @@ from chars import (CLEVELAND, COPPER, DONORS, EIFFEL, IMMIGRANTS, PULITZER, VERD
                    statue, statue_part, tricolor)
 from gfx import GOLD, GOLD2, GREY, INK, NAVY, RED, W, WHITE, e_io, e_out, hexc, lerp, pop, seg  # noqa: E402
 from people import person  # noqa: E402
-from photos import photo  # noqa: E402
+from photos import cover, photo  # noqa: E402
 
 CX = W / 2
 GROUND = 1270
@@ -44,22 +44,28 @@ def monument(g, x, y, sc, col=VERDIGRIS, t=0.0, k=1.0, glow=0.0):
 
 # ------------------------------------------------------------------ 1. hook
 def s_hook(g, t, L, d):
-    g.ground(GROUND, WHITE)
+    t_out = L[1] + 0.4
+    if t >= t_out:
+        g.ground(GROUND, WHITE)
+    if t < t_out + 0.3:   # หน้าปกโพลารอยด์ (เฟรมแรกของคลิป) แล้วปลิวออก
+        u = e_io(seg(t, t_out, t_out + 0.3))
+        g.label("วันนี้ในอดีต", CX, 250 - 300 * u, 80, rot=-2)
+        cover(g, "statue", "28 ตุลาคม 1886", "เปิดตัว \"เทพีเสรีภาพ\"", 1 - 0.4 * u, -2 - 25 * u, 1.0 + 0.04 * t,
+              x=CX + 900 * u, y=690, w=600, h=700,
+              fallback=lambda g, w, h: monument(g, 0, h / 2, 0.45, VERDIGRIS, t))
+        if t < t_out:
+            return
     if t < L[2] - 0.2:   # กล่องไม้กว่า 200 ลัง
-        n = 1 if t < L[1] - 0.2 else int(lerp(1, 9, seg(t, L[1], L[2] - 0.4)))
+        n = int(lerp(1, 9, seg(t, L[1] + 0.4, L[2] - 0.4)))
         slots = [(CX, GROUND), (CX - 210, GROUND), (CX + 210, GROUND), (CX - 105, GROUND - 170),
                  (CX + 105, GROUND - 170), (CX - 315, GROUND - 170), (CX + 315, GROUND - 170), (CX, GROUND - 340),
                  (CX - 210, GROUND - 340)]
         for i in range(n):
             x, y = slots[i]
-            crate(g, x, y, 1.0 * pop(t, (L[1] + 0.15 * i) if i else 0.2) + 0.01, 3 * math.sin(i * 2.1),
+            crate(g, x, y, 1.0 * pop(t, L[1] + 0.4 + 0.15 * i) + 0.01, 3 * math.sin(i * 2.1),
                   "FRAGILE" if i == 0 else "")
-        if t < L[1] - 0.2:
-            g.label("วันนี้ในอดีต", CX, 380, 104, sc=lerp(2.0, 1, e_out(seg(t, 0.1, 0.4))) if t > 0.1 else 0, rot=-3)
-            g.label("28 ตุลาคม 1886", CX, 520, 84, color=GOLDTXT, sc=pop(t, 0.5))
-        else:
-            g.label(f"{int(lerp(1, 214, e_out(seg(t, L[1], L[2]))))} ลัง!", CX, 560, 96, color=RED, sc=ap(t, L[1] + 0.2))
-            title(g, t, L[1], "กล่องไม้ยักษ์กว่า 200 ลัง", INK, 84)
+        g.label(f"{int(lerp(1, 214, e_out(seg(t, L[1], L[2]))))} ลัง!", CX, 560, 96, color=RED, sc=ap(t, L[1] + 0.6))
+        title(g, t, L[1] + 0.4, "กล่องไม้ยักษ์กว่า 200 ลัง", INK, 84)
         return
     if t < L[3] - 0.2:   # ข้ามมหาสมุทร → ประกอบร่าง
         sea(g, 1150, t)

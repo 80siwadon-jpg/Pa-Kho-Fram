@@ -158,5 +158,58 @@ def photo(g, pid, x, y, w, h, rot=0.0, k=1.0, zoom=1.0, pan=(0.0, 0.0), label=No
     return True
 
 
+def cover(g, pid, date, title, k=1.0, rot=-2.0, zoom=1.0, x=540, y=700, w=560, h=680, fallback=None):
+    """หน้าปกเปิดคลิปแบบโพลารอยด์: ภาพในกรอบขาว + แถบล่างเขียนวันเดือนปี และชื่อเรื่อง
+    ใช้เป็นเฟรมแรกของคลิป (k=1 ตั้งแต่ t=0 ไม่ต้องเด้งเข้า); fallback(g, w, h) = วาดการ์ตูนแทนถ้าไม่มีภาพ"""
+    if k < 0.02:
+        return
+    import cairo
+    from gfx import INK, GREY, hexc
+    from people import _rr, _shade
+    c = g.c
+    s = _load(pid) if pid else None
+    pad, foot = 26, 230
+    with g.at(x, y, k, rot):
+        c.save()   # เงา
+        _rr(c, -w / 2 - pad + 12, -h / 2 - pad + 16, w + 2 * pad, h + pad + foot, 12)
+        c.set_source_rgba(0, 0, 0, 0.2)
+        c.fill()
+        c.restore()
+        _rr(c, -w / 2 - pad, -h / 2 - pad, w + 2 * pad, h + pad + foot, 12)
+        _shade(c, (1, 1, 1, 1), 6, 0.0)
+        c.save()
+        c.rectangle(-w / 2, -h / 2, w, h)
+        c.clip()
+        if s is not None:
+            surf, iw, ih, _ = s
+            sc = max(w / iw, h / ih) * zoom
+            c.save()
+            c.scale(sc, sc)
+            c.set_source_surface(surf, -iw / 2, -ih / 2)
+            c.get_source().set_filter(cairo.FILTER_GOOD)
+            c.paint()
+            c.restore()
+        else:
+            c.set_source_rgba(0.95, 0.94, 0.9, 1)
+            c.paint()
+            if fallback:
+                fallback(g, w, h)
+        c.restore()
+        c.rectangle(-w / 2, -h / 2, w, h)
+        c.set_source_rgba(*INK)
+        c.set_line_width(3)
+        c.stroke()
+        from gfx import text_sprite
+
+        def fit(txt, size):   # ย่อขนาดตัวอักษรให้อยู่บรรทัดเดียวในกรอบ
+            while size > 30 and text_sprite(txt, size, "kanit")[2] > w - 20:
+                size -= 2
+            return size
+        g.text(date, 0, h / 2 + 64, fit(date, 54), "kanit", hexc("#b37a12"))
+        g.text(title, 0, h / 2 + 146, fit(title, 72), "kanit", INK)
+        if s is not None:
+            g.text(credit(pid), 0, h / 2 + foot - 30, 18, "kanitm", GREY, maxw=w)
+
+
 if __name__ == "__main__":
     fetch()
