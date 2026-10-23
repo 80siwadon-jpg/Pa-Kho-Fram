@@ -256,4 +256,8 @@ def film_strip(g, x, y, sc=1.0, rot=0.0, label="", col=INK, t=0.0):
         _rr(c, -150, -76, 300, 152, 6)
         _shade(c, col, 3, 0)
         if label:
-            g.text(label, 0, 0, 52, "kanit", WHITE)
+            from gfx import text_sprite
+            size = 52
+            while size > 24 and text_sprite(label, size, "kanit")[2] > 280:
+                size -= 2
+            g.text(label, 0, 0, size, "kanit", WHITE)
