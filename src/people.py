@@ -56,6 +56,7 @@ class Look:
     band: bool = False             # ปกลูกไม้ขาวแบนคลุมไหล่ (ศตวรรษที่ 17)
     cravat: bool = False           # ผ้าผูกคอขาวห้อยหน้าอก (ปลายศตวรรษที่ 17)
     sash: tuple = None             # สายสะพายพาดไหล่ขวา (สีผ้า) — ใช้กับ outfit="tunic"
+    gloves: tuple = None           # นวมชกมวย (สี) — แทนมือทุกท่า; ใช้กับ outfit="bare" + shorts=True (นักมวย)
 
 
 def _shade(c, fill, lw=4.5, dark=0.24, horiz=True, stroke=INK):
@@ -126,6 +127,8 @@ POSES = {
     "salute": ((6, 2), (-20, -175), "open", "palm"),
     "spy":   ((6, 2), (60, 150), "open", "fist"),       # ส่องกล้องส่องทางไกล
     "lie":   ((6, 2), (6, 2), "open", "open"),
+    "guard": ((12, -152), (12, -152), "fist", "fist"),    # การ์ดมวย นวมชิดคาง
+    "punch": ((12, -152), (84, 92), "fist", "fist"),     # ชกตรงไปทางขวาจอ
 }
 
 
@@ -139,7 +142,12 @@ def _arm(c, look, sx, ang, hand, lw, t):
     d = (wr[0] - el[0], wr[1] - el[1])
     n = math.hypot(*d) or 1
     ux, uy = d[0] / n, d[1] / n
-    if look.outfit in ("tee", "dress"):   # แขนสั้น: ต้นแขนเป็นผ้า ท่อนล่างเป็นผิว
+    if look.outfit == "bare":   # ไม่ใส่เสื้อ (นักมวย)
+        for wd, col in ((44 + 2 * lw, INK), (44, look.skin)):
+            _stroke(c, [sh, el, wr], wd, col, smooth=False)
+        _stroke(c, [(sh[0] + sx * 10, sh[1] + 6), (el[0] + sx * 10, el[1]), (wr[0] + sx * 8, wr[1])], 12,
+                (*SHADOW, 0.2), smooth=False)
+    elif look.outfit in ("tee", "dress"):   # แขนสั้น: ต้นแขนเป็นผ้า ท่อนล่างเป็นผิว
         for wd, col in ((38 + 2 * lw, INK), (38, look.skin)):
             _stroke(c, [sh, el, wr], wd, col, smooth=False)
         mid = (lerp(sh[0], el[0], 0.62), lerp(sh[1], el[1], 0.62))
@@ -168,6 +176,15 @@ def _hand(c, look, x, y, ang, kind, sx, lw):
     if sx < 0:
         c.scale(-1, 1)
     sk = look.skin
+    if look.gloves and kind != "hidden":   # นวมชกมวย
+        _rr(c, -32, -18, 64, 70, 28)
+        _shade(c, look.gloves, lw, 0.3)
+        _rr(c, -28, -26, 56, 18, 6)
+        _shade(c, WHITE, lw * 0.7, 0.1)
+        _smooth_path(c, [(24, 4), (40, 14), (36, 34), (24, 30)])
+        _shade(c, look.gloves, lw * 0.8, 0.35)
+        c.restore()
+        return
     if kind == "hidden":
         c.restore()
         return
@@ -793,7 +810,7 @@ def person(g, x, y, look, sc=1.0, mood="neutral", pose="down", pose2=None, k=0.0
         c.translate(0, 430)
         bw = look.build
         # แขนด้านหลัง (ข้างซ้ายจอ) วาดก่อนลำตัวถ้ายกขึ้นน้อย
-        back_first = ang[0][0] < 60
+        back_first = ang[0][0] < 60 and ang[0][1] > -120   # การ์ดมวย: นวมหลังอยู่หน้าลำตัว
         if back_first and look.empty_arm != -1:
             _arm(c, look, -1, ang[0], hands[0], lw, g.t)
         if look.outfit == "suit":
@@ -954,11 +971,25 @@ def _casual(c, look, bw, lw):
     if o == "hoodie":   # ฮู้ดด้านหลังคอ
         _smooth_path(c, [(-90, -760), (0, -800), (90, -760), (70, -720), (-70, -720)])
         _shade(c, col, lw, 0.35)
-    hem = {"dress": -250, "gown": -30}.get(o, -406)
+    hem = {"dress": -250, "gown": -30, "bare": -440}.get(o, -406)
     wide = {"dress": 1.35, "gown": 1.75}.get(o, 1.0)
     _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
                      (112 * bw * wide, hem - 8), (0, hem), (-112 * bw * wide, hem - 8), (-110 * bw, -480), (-124 * bw, -650)])
+    if o == "bare":
+        col = look.skin
     _shade(c, col, lw, 0.32)
+    if o == "bare":   # อก/หน้าท้อง + ขอบกางเกงมวย
+        for sx in (-1, 1):
+            _stroke(c, [(sx * 8, -640), (sx * 50, -620), (sx * 90, -650)], 3.5, INK, 0.35)
+            for k in range(3):
+                _stroke(c, [(sx * 10, -585 + k * 45), (sx * 40, -580 + k * 45)], 3, INK, 0.25)
+        _stroke(c, [(0, -640), (0, -470)], 3, INK, 0.25, smooth=False)
+        c.new_path()
+        c.arc(0, -500, 5, 0, 2 * math.pi)
+        c.set_source_rgba(*INK[:3], 0.4)
+        c.fill()
+        _rr(c, -112 * bw, -462, 224 * bw, 34, 8)
+        _shade(c, WHITE, 3.5, 0.15)
     if o == "gown":   # เข็มขัดเงิน + จีบผ้า
         for k in (-0.45, 0.0, 0.45):
             _stroke(c, [(k * 60, -420), (k * 150, -60)], 3, INK, 0.25)
