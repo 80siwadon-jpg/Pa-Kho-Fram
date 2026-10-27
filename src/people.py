@@ -989,7 +989,7 @@ def _casual(c, look, bw, lw):
         c.set_source_rgba(*INK[:3], 0.4)
         c.fill()
         _rr(c, -112 * bw, -462, 224 * bw, 34, 8)
-        _shade(c, WHITE, 3.5, 0.15)
+        _shade(c, look.shirt, 3.5, 0.15)   # ขอบกางเกงมวย (สีตาม shirt)
     if o == "gown":   # เข็มขัดเงิน + จีบผ้า
         for k in (-0.45, 0.0, 0.45):
             _stroke(c, [(k * 60, -420), (k * 150, -60)], 3, INK, 0.25)

@@ -27,14 +27,15 @@ CANVAS = hexc("#e9e2cf")
 SKIN_ALI = hexc("#9a6a48")
 SKIN_GF = hexc("#5e3d28")
 
-# มูฮัมหมัด อาลี วัย 32: ผมดำสั้นเรียบ หน้าหล่อเกลี้ยงเกลา ยิ้มมั่นใจ กางเกงมวยขาวขอบดำ นวมแดง รองเท้าขาว
+GLOVE = hexc("#4a2a26")   # นวมสีน้ำตาลเข้ม (ตามภาพจริง)
+# มูฮัมหมัด อาลี วัย 32: ผมดำสั้นเรียบ หน้าหล่อเกลี้ยงเกลา ยิ้มมั่นใจ กางเกงมวยขาวขอบดำ นวมน้ำตาลเข้ม รองเท้าขาว
 ALI = Look(hair="short", hair_col=hexc("#1b1714"), skin=SKIN_ALI, outfit="bare", shorts=True, pants=WHITE,
-           socks=WHITE, shoes=WHITE, gloves=RED_C, w=60, jaw=0.5, nose=1.0, brow=1.0, age=0.15, build=1.12)
+           shirt=INK, socks=WHITE, shoes=WHITE, gloves=GLOVE, w=60, jaw=0.5, nose=1.0, brow=1.0, age=0.15, build=1.12)
 ALI_SUIT = Look(hair="short", hair_col=hexc("#1b1714"), skin=SKIN_ALI, suit=hexc("#2b2f3a"), tie=hexc("#1b1714"),
                 w=60, jaw=0.5, age=0.15, build=1.1)
-# จอร์จ โฟร์แมน วัย 25: ตัวใหญ่กว่า ผมสั้นเกรียน หนวด หน้าดุ กางเกงแดง นวมแดง
-FOREMAN = Look(hair="buzz", hair_col=hexc("#1b1714"), skin=SKIN_GF, outfit="bare", shorts=True, pants=RED_C,
-               socks=WHITE, shoes=WHITE, gloves=RED_C, w=64, jaw=0.85, nose=1.1, brow=1.3, age=0.1, build=1.28,
+# จอร์จ โฟร์แมน วัย 25: ตัวใหญ่สูงกว่า ผมหยิกฟูสั้น หนวด หน้าดุ กางเกงแดงขอบน้ำเงิน นวมน้ำตาลเข้ม
+FOREMAN = Look(hair="afro", hair_col=hexc("#1b1714"), skin=SKIN_GF, outfit="bare", shorts=True, pants=RED_C,
+               shirt=BLUE_C, socks=WHITE, shoes=WHITE, gloves=GLOVE, w=64, jaw=0.85, nose=1.1, brow=1.3, age=0.1, build=1.28,
                height=1.04, facial="mustache")
 REFEREE = Look(hair="bald", hair_col=hexc("#8a8a8a"), skin=hexc("#6a4530"), outfit="vest", suit=WHITE, shirt=WHITE,
                tie=INK, bowtie=True, pants=hexc("#2b2f3a"), w=58, age=0.6)

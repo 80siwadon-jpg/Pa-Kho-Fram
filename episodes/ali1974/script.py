@@ -2,7 +2,7 @@
 """
 
 HEADER = "วันนี้ในอดีต · 30 ต.ค. 1974"
-COVER = {"date": "30 ตุลาคม 1974", "title": "The Rumble in the Jungle", "art": 0}
+COVER = {"date": "30 ตุลาคม 1974", "title": "The Rumble in the Jungle", "photo": "fight"}
 
 SCENES = [
     ("hook", [
