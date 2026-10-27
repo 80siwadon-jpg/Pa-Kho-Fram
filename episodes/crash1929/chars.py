@@ -155,7 +155,7 @@ def bubble_burst(g, x, y, r, k=0.0, t=0.0):
         g.star(x, y, r * (0.6 + k), (1, 1, 1, 0.9 - k), 6, pts=12, inner=0.4)
 
 
-def headline(g, x, y, sc=1.0, rot=0.0, h1="STOCKS CRASH!", h2="WALL ST. PANIC"):
+def headline(g, x, y, sc=1.0, rot=0.0, h1="STOCKS CRASH!", h2="WALL ST. PANIC", date="OCT. 24, 1929"):
     c = g.c
     with g.at(x, y, sc, rot):
         _rr(c, -300, -380, 600, 760, 6)
@@ -166,7 +166,7 @@ def headline(g, x, y, sc=1.0, rot=0.0, h1="STOCKS CRASH!", h2="WALL ST. PANIC"):
         g.text(h2, 0, -130, 40, "kanit", INK, maxw=540)
         for i in range(8):
             g.line([(-260, -60 + i * 40), (260 - 80 * (i % 3), -60 + i * 40)], 5, GREY, amp=0)
-        g.text("OCT. 24, 1929", 0, 320, 30, "kanit", GREY)
+        g.text(date, 0, 320, 30, "kanit", GREY)
 
 
 def bank(g, x, y, sc=1.0, closed=0.0):
