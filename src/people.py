@@ -56,6 +56,7 @@ class Look:
     band: bool = False             # ปกลูกไม้ขาวแบนคลุมไหล่ (ศตวรรษที่ 17)
     cravat: bool = False           # ผ้าผูกคอขาวห้อยหน้าอก (ปลายศตวรรษที่ 17)
     sash: tuple = None             # สายสะพายพาดไหล่ขวา (สีผ้า) — ใช้กับ outfit="tunic"
+    vstripe: tuple = None          # แถบตั้งบนเสื้อ (สีแถบ) เช่น เสื้ออาร์เจนตินาฟ้า-ขาว
     gloves: tuple = None           # นวมชกมวย (สี) — แทนมือทุกท่า; ใช้กับ outfit="bare" + shorts=True (นักมวย)
 
 
@@ -998,6 +999,21 @@ def _casual(c, look, bw, lw):
         for k in range(-3, 4):
             _rr(c, k * 30 - 10, -466, 20, 22, 4)
             _shade(c, hexc("#9aa1ab"), 2, 0)
+    if look.vstripe:   # แถบตั้ง (เสื้อทีมชาติอาร์เจนตินา)
+        c.save()
+        _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
+                         (112 * bw, hem - 8), (0, hem), (-112 * bw, hem - 8), (-110 * bw, -480), (-124 * bw, -650)])
+        c.clip()
+        for j in range(-2, 3):
+            _rr(c, j * 64 - 18, -760, 36, 400, 0)
+            c.set_source_rgba(*look.vstripe[:3], 1)
+            c.fill()
+        c.restore()
+        _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
+                         (112 * bw, hem - 8), (0, hem), (-112 * bw, hem - 8), (-110 * bw, -480), (-124 * bw, -650)])
+        c.set_source_rgba(*INK)
+        c.set_line_width(lw)
+        c.stroke()
     if o == "stripe":   # เสื้อลายขวางทหารเรือ
         c.save()
         _smooth_path(c, [(-118 * bw, -722), (-60, -752), (60, -752), (118 * bw, -722), (124 * bw, -650), (110 * bw, -480),
