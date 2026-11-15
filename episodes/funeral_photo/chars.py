@@ -612,9 +612,10 @@ def _darker(col, k=0.78):
     return (col[0] * k, col[1] * k, col[2] * k, col[3] if len(col) > 3 else 1.0)
 
 
-def _egg(c, w, top=-96, chin=84, fx=0.0):
-    pts = [(0, top), (w * 0.62, top + 6), (w * 0.9, top + 40), (w * 0.95, -10), (w * 0.86, 30),
-           (w * 0.62, 62), (fx * 0.4 + w * 0.22, chin - 2), (fx * 0.4, chin)]
+def _egg(c, w, top=-92, chin=74, fx=0.0):
+    """หน้ากลม แก้มอิ่ม คางมน"""
+    pts = [(0, top), (w * 0.74, top + 12), (w * 1.04, -34), (w * 1.06, 8), (w * 0.9, 46),
+           (w * 0.55, 70), (fx * 0.4 + w * 0.2, chin + 2), (fx * 0.4, chin + 4)]
     full = pts + [(-x + fx * 0.8 if y > 20 else -x, y) for x, y in reversed(pts[1:-1])]
     _smooth_path(c, full)
     return full
@@ -634,7 +635,7 @@ def _fill_grad(c, col, dark=0.82):
 
 def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw=4.5):
     """หัวที่จุดกำเนิด = กลางหน้า (ระดับตา ~ -8) — อินเทอร์เฟซเดียวกับ people.head"""
-    c, t, w = g.c, g.t, look.w * 0.86
+    c, t, w = g.c, g.t, look.w * 1.1
     fx = turn * w * 0.32
     hair = look.hair_col
     skin = look.skin
@@ -658,9 +659,30 @@ def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=
         c.arc(0, 0, w * 0.15, 0, 2 * math.pi)
         c.restore()
         _fill_grad(c, _darker(skin, 0.95), 0.85)
-    # หน้า
+    # เงาคางตกบนคอ
+    c.save()
+    _rr(c, -w * 0.36, 30, w * 0.72, 110, 12)
+    c.clip()
+    sg = cairo.LinearGradient(0, 70, 0, 120)
+    sg.add_color_stop_rgba(0, 0.12, 0.05, 0.04, 0.45)
+    sg.add_color_stop_rgba(1, 0.12, 0.05, 0.04, 0.0)
+    c.set_source(sg)
+    c.paint()
+    c.restore()
+    # หน้า + แสงเงา (แสงจากซ้ายบน)
     _egg(c, w, fx=fx)
-    _fill_grad(c, skin, 0.8)
+    _fill_grad(c, skin, 0.86)
+    c.save()
+    _egg(c, w, fx=fx)
+    c.clip()
+    rg = cairo.RadialGradient(-w * 0.45 + fx * 0.3, -55, w * 0.1, -w * 0.2, -20, w * 1.7)
+    rg.add_color_stop_rgba(0, 1, 0.96, 0.88, 0.32)
+    rg.add_color_stop_rgba(0.45, 1, 0.95, 0.9, 0.0)
+    rg.add_color_stop_rgba(1, 0.18, 0.06, 0.05, 0.42)
+    c.set_source(rg)
+    c.paint()
+    glow(g, w * 0.95 + fx * 0.2, -10, w * 0.5, (1, 0.85, 0.7, 1), 0.12)   # แสงขอบ (rim)
+    c.restore()
     # แก้ม + เงาใต้คาง
     for sx in (-1, 1):
         glow(g, sx * w * 0.5 + fx, 30, w * 0.32, (0.88, 0.45, 0.4, 1), 0.18)
@@ -682,47 +704,62 @@ def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=
         for sx in (-1, 1):
             _stroke(c, [(sx * w * 0.5 + fx, 10), (sx * w * 0.36 + fx, 16), (sx * w * 0.22 + fx, 12)], 2, line, 0.55)
             _stroke(c, [(sx * w * 0.26 + fx, 40), (sx * w * 0.32 + fx, 62)], 2, line, 0.5)
-    # ตา
+    # ตาโต
     blink = mood not in ("shock", "shout") and ((t * 0.45 + seed * 0.37) % 3.6) < 0.1
-    ey = -8
+    ey = -4
     sad = mood in ("sad", "worry")
     for sx in (-1, 1):
-        ex = sx * w * 0.36 + fx
-        ew, eh = w * 0.2, w * (0.15 if mood != "shock" else 0.2)
-        if blink or mood == "smile_closed":
-            _stroke(c, [(ex - ew, ey), (ex, ey + 4), (ex + ew, ey)], 3, _darker(hair, 1.0), 1.0)
-        else:
-            c.save()
-            c.translate(ex, ey)
-            c.scale(1, eh / ew)
-            c.new_path()
-            c.arc(0, 0, ew, 0, 2 * math.pi)
-            c.restore()
-            c.set_source_rgba(0.98, 0.97, 0.95, 1)
-            c.fill_preserve()
-            c.save()
-            c.clip()
-            ix, iy = ex + look_at[0] * ew * 0.35, ey + look_at[1] * eh * 0.3
-            g.circle(ix, iy, eh * 0.95, hexc("#3a2a20"), 0)
-            g.circle(ix, iy, eh * 0.5, hexc("#120c08"), 0)
-            g.circle(ix - eh * 0.3, iy - eh * 0.35, eh * 0.28, (1, 1, 1, 0.95), 0)
-            c.restore()
-            # เปลือกตาบน
-            _stroke(c, [(ex - ew * 1.05, ey + 1), (ex, ey - eh * 1.08), (ex + ew * 1.05, ey + 1)], 3, hexc("#2a1d16"), 1.0)
-            if sad or look.age > 0.55:
-                _stroke(c, [(ex - ew * 0.8, ey + eh * 1.3), (ex + ew * 0.8, ey + eh * 1.3)], 2, line, 0.5)   # ใต้ตา
+        ex = sx * w * 0.42 + fx
+        ew = w * 0.27
+        eh = w * (0.25 if mood != "shock" else 0.31) * (0.8 if mood in ("angry", "smug") else 1.0)
+        if blink:
+            _stroke(c, [(ex - ew, ey), (ex, ey + 6), (ex + ew, ey)], 3.5, hexc("#2a1d16"), 1.0)
+            continue
+        c.save()
+        c.translate(ex, ey)
+        c.scale(1, eh / ew)
+        c.new_path()
+        c.arc(0, 0, ew, 0, 2 * math.pi)
+        c.restore()
+        c.set_source_rgba(0.99, 0.98, 0.96, 1)
+        c.fill_preserve()
+        c.save()
+        c.clip()
+        ix, iy = ex + look_at[0] * ew * 0.3, ey + 2 + look_at[1] * eh * 0.25
+        ir = eh * 0.86
+        ig = cairo.RadialGradient(ix, iy + ir * 0.4, ir * 0.1, ix, iy, ir)
+        ig.add_color_stop_rgba(0, 0.62, 0.42, 0.26, 1)
+        ig.add_color_stop_rgba(1, 0.2, 0.12, 0.08, 1)
+        c.set_source(ig)
+        c.arc(ix, iy, ir, 0, 2 * math.pi)
+        c.fill()
+        g.circle(ix, iy, ir * 0.48, hexc("#0e0906"), 0)
+        g.circle(ix - ir * 0.36, iy - ir * 0.38, ir * 0.3, (1, 1, 1, 0.95), 0)
+        g.circle(ix + ir * 0.34, iy + ir * 0.3, ir * 0.13, (1, 1, 1, 0.8), 0)
+        shade = cairo.LinearGradient(0, ey - eh, 0, ey)   # เงาเปลือกตาบนทับลูกตา
+        shade.add_color_stop_rgba(0, 0.2, 0.1, 0.08, 0.35)
+        shade.add_color_stop_rgba(1, 0.2, 0.1, 0.08, 0.0)
+        c.set_source(shade)
+        c.paint()
+        c.restore()
+        _stroke(c, [(ex - ew * 1.08, ey + 2), (ex - ew * 0.3, ey - eh * 1.05), (ex + ew * 0.5, ey - eh * 1.02), (ex + ew * 1.1, ey - 1)],
+                4, hexc("#21160f"), 1.0)
+        _stroke(c, [(ex - ew * 0.7, ey + eh * 0.95), (ex + ew * 0.6, ey + eh * 0.92)], 1.8, line, 0.45)
+        if sad or look.age > 0.55:
+            _stroke(c, [(ex - ew * 0.7, ey + eh * 1.35), (ex + ew * 0.7, ey + eh * 1.35)], 2, line, 0.5)
     # คิ้ว
     tilt = {"angry": -0.32, "shout": -0.32, "firm": -0.15, "sad": 0.3, "worry": 0.3, "shock": 0.0, "smug": -0.1}.get(mood, 0.0)
-    by = ey - w * 0.3 - (6 if mood == "shock" else 0)
+    by = ey - w * 0.46 - (8 if mood == "shock" else 0)
     for sx in (-1, 1):
-        bx = sx * w * 0.36 + fx
+        bx = sx * w * 0.42 + fx
         inner = by - tilt * w * 0.25
         outer = by + tilt * w * 0.12
         _stroke(c, [(bx - sx * w * 0.2, inner), (bx + sx * w * 0.22, outer)], 3.5 * look.brow + 1.5, hexc("#2a1d16") if look.hair != "bald" else hexc("#d9d6cf"), 1.0)
     # จมูก (เงาเล็ก ๆ)
-    _stroke(c, [(fx + w * 0.05, 12), (fx + w * 0.1, 28), (fx - w * 0.02, 32)], 2.4, line, 0.75)
+    glow(g, fx + w * 0.08, 26, w * 0.12, _darker(skin, 0.6), 0.28)   # จมูก = เงานุ่ม ๆ
+    _stroke(c, [(fx - w * 0.06, 34), (fx + w * 0.08, 35)], 2.2, line, 0.55)
     # ปาก
-    my = 52
+    my = 48
     open_ = 0.0
     if talk:
         open_ = max(0.0, math.sin(t * 15 + seed)) * float(talk) * 0.8
@@ -785,19 +822,53 @@ def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=
         col = hexc("#2a2622")
         rnd = look.glasses.startswith("round")
         for sx in (-1, 1):
-            ex = sx * w * 0.36 + fx
+            ex = sx * w * 0.42 + fx
             c.new_path()
             if rnd:
-                c.arc(ex, ey, w * 0.27, 0, 2 * math.pi)
+                c.arc(ex, ey, w * 0.34, 0, 2 * math.pi)
             else:
-                _rr(c, ex - w * 0.29, ey - w * 0.19, w * 0.58, w * 0.38, 8)
+                _rr(c, ex - w * 0.36, ey - w * 0.28, w * 0.72, w * 0.54, 10)
             c.set_source_rgba(0.85, 0.92, 0.95, 0.18)
             c.fill_preserve()
             c.set_source_rgba(*col)
             c.set_line_width(3.2 if not look.glasses.endswith("thin") else 3.0)
             c.stroke()
-        _stroke(c, [(fx - w * 0.09, ey - 2), (fx + w * 0.09, ey - 2)], 3, col, 1.0)
+        _stroke(c, [(fx - w * 0.07, ey - 4), (fx + w * 0.07, ey - 4)], 3, col, 1.0)
 
 
 _people.head = flat_head
 head = flat_head
+
+
+# ================================================================ แสงเงาทั้งเฟรม (บรรยากาศเสมือนจริง)
+def light_pass(g, lx, ly, col=(1.0, 0.86, 0.62), k=0.55, r=1300, dust=True):
+    """แสงจากแหล่งเดียวทาบทั้งฉาก+ตัวละคร (soft light) + แสงฟุ้ง (screen) + ฝุ่นลอยในแสง"""
+    c = g.c
+    big = (-1500, -1500, W + 3000, H + 3000)
+    c.save()
+    c.set_operator(cairo.OPERATOR_SOFT_LIGHT)
+    rg = cairo.RadialGradient(lx, ly, 0, lx, ly, r)
+    rg.add_color_stop_rgba(0, col[0], col[1], col[2], k)
+    rg.add_color_stop_rgba(0.45, 0.5, 0.5, 0.5, 0.0)
+    rg.add_color_stop_rgba(1, 0.02, 0.03, 0.06, k)
+    c.set_source(rg)
+    c.rectangle(*big)
+    c.fill()
+    c.set_operator(cairo.OPERATOR_SCREEN)
+    rg = cairo.RadialGradient(lx, ly, 0, lx, ly, r * 0.45)
+    rg.add_color_stop_rgba(0, col[0], col[1], col[2], 0.22 * k)
+    rg.add_color_stop_rgba(1, col[0], col[1], col[2], 0.0)
+    c.set_source(rg)
+    c.rectangle(*big)
+    c.fill()
+    c.restore()
+    if dust:
+        t = g.t
+        for i in range(26):
+            u = (hn(i, 31) * 0.5 + 0.5)
+            v = (hn(i, 32) * 0.5 + 0.5)
+            px = lx + (u - 0.5) * r * 0.9 + 30 * math.sin(t * 0.4 + i)
+            py = ly + ((v * r * 0.7 + t * 12 * (0.5 + u)) % (r * 0.7)) - r * 0.2
+            d = math.hypot(px - lx, py - ly) / (r * 0.5)
+            if d < 1:
+                g.circle(px, py, 2 + 2.5 * u, (1, 0.95, 0.85, 0.35 * (1 - d)), 0)

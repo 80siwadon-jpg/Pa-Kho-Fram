@@ -10,6 +10,7 @@ from chars import (BG, CREAM, FON, GOLD, GRANDMA_BW, HOSP, KENG, KILLER, LAMP, M
                    incense, keng_face, killer_reflection, knife, lerp_col, phone, pipe, set_city, set_exterior,
                    set_hospital, set_road_night, set_shop, set_station, set_temple_sala, set_workroom, smoke,
                    speakers, usb, vest, vignette, wall_clock)
+from chars import light_pass  # noqa: E402
 from gfx import INK, WHITE, H, W, e_io, e_out, hexc, hn, lerp, pop, seg  # noqa: E402
 from people import _rr, _shade, _stroke, head, person  # noqa: E402
 
@@ -59,11 +60,29 @@ def run_shots(g, t, L, d, shots):
     i = beat(t, L)
     fn = shots[min(i, len(shots) - 1)]
     t0 = L[i] - 0.2 if i < len(L) else 0
+    g.light = None
     fn(g, t, max(t - t0, 0.0))
+    lx, ly, col, k = g.light or (CX, -200, (0.95, 0.92, 0.86), 0.35)
+    light_pass(g, lx, ly, col, k)
+
+
+LIGHTS = {   # แหล่งแสงหลักของแต่ละฉาก (x, y, สี, ความแรง)
+    "work_night": (1150, 560, (0.75, 0.88, 1.0), 0.6), "work_dawn": (1500, 280, (1.0, 0.82, 0.7), 0.55),
+    "work_dusk": (1500, 280, (1.0, 0.66, 0.4), 0.6), "work_day": (1500, 280, (1.0, 0.95, 0.85), 0.4),
+    "shop_day": (1550, 150, (1.0, 0.88, 0.66), 0.5), "shop_night": (1300, 980, (1.0, 0.8, 0.5), 0.6),
+    "ext_night": (1560, 300, (1.0, 0.82, 0.55), 0.6), "ext_day": (1700, -100, (1.0, 0.95, 0.8), 0.4),
+    "ext_dawn": (300, 300, (1.0, 0.78, 0.65), 0.55), "ext_dusk": (1700, 200, (1.0, 0.65, 0.4), 0.55),
+    "hosp": (1550, 280, (0.92, 0.97, 1.0), 0.45), "city": (CX, -200, (1.0, 0.97, 0.9), 0.35),
+    "sala": (960, 250, (1.0, 0.86, 0.6), 0.5), "road": (1420, 220, (1.0, 0.8, 0.5), 0.65),
+    "station": (650, 200, (1.0, 0.6, 0.3), 0.6), "stairs": (300, 0, (1.0, 0.82, 0.55), 0.55),
+}
 
 
 def bg(g, key, fn, zoom=1.0, fx=CX, fy=CY, radius=7):
-    """ฉากหลังเบลอ ซูมเข้าหา (fx, fy) ได้ (ช็อตใกล้จากฉากเดียวกัน)"""
+    """ฉากหลังเบลอ ซูมเข้าหา (fx, fy) ได้ (ช็อตใกล้จากฉากเดียวกัน) + ตั้งแหล่งแสงของฉาก"""
+    if key in LIGHTS:
+        lx, ly, col, k = LIGHTS[key]
+        g.light = (CX + (lx - fx) * zoom, CY + (ly - fy) * zoom, col, k)
     if zoom == 1.0:
         blurred(g, key, fn, radius)
         return
