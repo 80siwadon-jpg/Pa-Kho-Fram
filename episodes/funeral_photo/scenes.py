@@ -25,6 +25,7 @@ SUB_PHRASES = True
 SUB_SIZE = 50
 SUB_TOP = 990          # ซับอยู่ในแถบดำล่างแบบภาพยนตร์
 BAR = 104              # แถบดำบน/ล่าง (สัดส่วนภาพ ~2.2:1)
+CHANNEL = "โกสป่ะ"     # ชื่อช่อง มุมซ้ายบน
 AMBIENCE = {"rain": 0.025, "drone": 0.12}   # โทนห้องเงียบ ๆ + เสียงต่ำ ใต้เสียงพากย์
 
 CAMERA = {}
@@ -44,7 +45,7 @@ TRANSITIONS.update({"pete": "zoom", "night1": "zoom", "envelope": "zoom", "night
 # ---------------------------------------------------------------- helpers
 def shoulders(g, look, x, y, sc):
     """ไหล่ + คอ ใต้หัวภาพใกล้ (ไม่ให้หัวลอย)"""
-    if sc < 1.8:
+    if sc <= 2.0:   # ภาพนอนบนเตียง/ไม่ใช่ภาพใกล้ ไม่ต้องมีไหล่
         return
     with g.at(x, y, sc):
         _rr(g.c, -22, 40, 44, 60, 10)
@@ -1458,6 +1459,7 @@ def POST(g, t):
     vignette(g, 0.35)
     fill_rect(c, 0, 0, W, BAR, (0, 0, 0, 1))
     fill_rect(c, 0, H - BAR, W, BAR, (0, 0, 0, 1))
+    g.text(CHANNEL, 56, BAR / 2, 42, "kanitsb", (1, 1, 1, 1), a=0.85, anchor="l")   # ชื่อช่องมุมซ้ายบน
 
 
 SCENES = {n: globals()["s_" + n] for n in _names}
