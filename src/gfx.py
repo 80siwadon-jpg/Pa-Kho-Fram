@@ -11,7 +11,19 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # ตอนที่มีไฟล์ episodes/<ตอน>/FORMAT เขียนว่า landscape = แนวนอน 1920x1080 (เช่น คลิปเล่าเรื่องผี room404)
 _FMT = os.path.join(ROOT, "episodes", os.environ.get("EPISODE", "alaska"), "FORMAT")
-LANDSCAPE = os.path.exists(_FMT) and open(_FMT).read().strip() == "landscape"
+_FMT_T = open(_FMT).read().split() if os.path.exists(_FMT) else []
+LANDSCAPE = "landscape" in _FMT_T
+SOFT = "soft" in _FMT_T   # เส้นนุ่ม: ไม่มีขอบดำหนา ใช้สีเข้มของสีพื้นแทน (สไตล์การ์ตูนแบนเรียบ)
+
+
+def soft_line(fill, stroke, lw, ink):
+    """คืน (สีเส้น, ความหนา) สำหรับโหมดเส้นนุ่ม"""
+    if not SOFT or not lw or tuple(stroke[:3]) != tuple(ink[:3]):
+        return stroke, lw
+    if fill is not None:
+        a = fill[3] if len(fill) > 3 else 1.0
+        return (fill[0] * 0.6, fill[1] * 0.6, fill[2] * 0.62, a), lw * 0.5
+    return (ink[0], ink[1], ink[2], 0.45), lw * 0.6
 W, H = (1920, 1080) if LANDSCAPE else (1080, 1920)
 FONTS = {
     "kanitsb": os.path.join(ROOT, "assets/fonts/Kanit-SemiBold.ttf"),
@@ -247,6 +259,7 @@ class Draw:
 
     def fs(self, fill, lw=7, stroke=INK):
         c = self.c
+        stroke, lw = soft_line(fill, stroke, lw, INK)
         if fill is not None:
             c.set_source_rgba(*fill)
             if lw:

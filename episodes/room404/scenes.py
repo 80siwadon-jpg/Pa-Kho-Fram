@@ -16,7 +16,10 @@ CX, CY = W / 2, H / 2
 GROUND = 1000
 DARKTXT = (0.02, 0.04, 0.05, 1)
 SUB_COLOR = hexc("#f3f0e2")
-SUB_STROKE = (9, DARKTXT)
+SUB_STROKE = (6, DARKTXT)
+SUB_PHRASES = True   # ซับสั้นทีละวลี (สไตล์คลิปเล่าเรื่องผีแนวตั้ง)
+SUB_SIZE = 64
+AMBIENCE = {"rain": 0.07, "drone": 0.14}   # ฝนพรำ + โทนต่ำ ๆ ใต้เสียงพากย์
 
 CAMERA = {"open": "push_in", "lock": "push_in", "knock": "push_in", "back": "pan_left", "owner": "pan_right",
           "balcony": "tilt_up", "logbook": "push_in", "empty": "pull_out", "cry": "pan_right", "peephole": "push_in",
@@ -46,8 +49,16 @@ def beat(t, L):
     return i
 
 
+CAPS = False   # สไตล์คลิปเล่าเรื่องผี: แทบไม่มีตัวหนังสือบนภาพ (เหลือเฉพาะ keep=True)
+KEEP = {"02:17 น.", "2 คืนก่อน", "ย้อนกลับไป...", "คืนที่สอง", "คืนที่สาม", "คืนที่สาม · ห้อง 404", "ปัง!",
+        "เสียงเคาะจากห้อง 404", "The Knock from Room 404", "1 เดือนต่อมา", "“ขอบคุณนะ...”", "บางเสียงเคาะ...",
+        "ไม่ได้ต้องการให้คุณกลัว", "ก๊อก", "เช้า", "3 ปีก่อน", "1", "2"}
+
+
 def cap(g, s, x, y, size=80, col=YEL2, sc=1.0, rot=0, a=1.0):
     """ตัวหนังสือบนภาพ (โทนมืด): ตัวเหลืองซีด ขอบเข้ม"""
+    if not CAPS and s not in KEEP:
+        return
     g.text(s, x, y, size, "kanit", col, sc, rot, a, stroke=max(8, int(size * 0.12)), stroke_color=DARKTXT)
 
 

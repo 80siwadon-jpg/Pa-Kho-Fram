@@ -63,6 +63,8 @@ class Look:
 def _shade(c, fill, lw=4.5, dark=0.24, horiz=True, stroke=INK):
     """เติมสี + ไล่เงาจากด้านซ้ายบน (แสง) ไปขวาล่าง แล้วตัดเส้น — ต้องสร้าง path ไว้ก่อนเรียก"""
     x0, y0, x1, y1 = c.fill_extents()
+    from gfx import soft_line
+    stroke, lw = soft_line(fill, stroke, lw, INK)
     c.set_source_rgba(*fill)
     c.fill_preserve()
     if dark > 0 and x1 > x0:
@@ -91,6 +93,9 @@ def _stroke(c, pts, lw=4, col=INK, a=1.0, smooth=True):
         c.move_to(*pts[0])
         for p in pts[1:]:
             c.line_to(*p)
+    from gfx import SOFT
+    if SOFT and tuple(col[:3]) == tuple(INK[:3]):   # เส้นรายละเอียดสีดำ -> จางและบางลง
+        a, lw = a * 0.45, lw * 0.65
     c.set_source_rgba(col[0], col[1], col[2], a * (col[3] if len(col) > 3 else 1))
     c.set_line_width(lw)
     c.set_line_cap(cairo.LINE_CAP_ROUND)

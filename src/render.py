@@ -32,6 +32,9 @@ OWN_COVER = getattr(_scenes, "OWN_COVER", False)   # ตอนที่วาด
 BG = getattr(_scenes, "BG", PAPER)                   # สีพื้นหลัง (ค่าเริ่มต้น = ขาว)
 SUB_COLOR = getattr(_scenes, "SUB_COLOR", INK)       # ซับ: ค่าเริ่มต้นตัวดำไม่มีขอบ
 SUB_STROKE = getattr(_scenes, "SUB_STROKE", None)    # (ความหนา, สี) = ซับมีขอบ สำหรับพื้นมืด
+SUB_PHRASES = getattr(_scenes, "SUB_PHRASES", False)  # ซับสั้นทีละวลี (ตัดตรง ... แบ่งเวลาตามความยาว)
+SUB_SIZE_EP = getattr(_scenes, "SUB_SIZE", None)
+AMBIENCE = getattr(_scenes, "AMBIENCE", None)   # เสียงบรรยากาศใต้เสียงพากย์ {"rain": ระดับ, "drone": ระดับ}
 
 BUILD = os.path.join(ROOT, "build", EPISODE)
 FPS = int(os.environ.get("FPS", 60))
@@ -74,17 +77,36 @@ def header(g, t, tl):
         g.text(HEADER, 20, -2, 40, "kanit")
 
 
+def phrase_at(text, a, b, t):
+    """แบ่งบรรทัดเป็นวลีตรง ... แล้วคืนวลีที่ควรแสดงที่เวลา t (เวลาแบ่งตามจำนวนตัวอักษร) + เวลาเริ่มวลี"""
+    import re
+    parts = [p.strip() for p in re.split(r"(?<=\.\.\.)\s*", text) if p.strip()]
+    if len(parts) <= 1:
+        return text, a
+    w = [max(len(p.replace("...", "")), 2) + 4 for p in parts]
+    tot, acc = sum(w), a
+    for p, wi in zip(parts, w):
+        d = (b - a) * wi / tot
+        if t < acc + d:
+            return p, acc
+        acc += d
+    return parts[-1], acc
+
+
 def subtitles(g, t, tl):
     lines = tl["lines"]
+    size = SUB_SIZE_EP or SUB_SIZE
     for i, ln in enumerate(lines):
         nxt = lines[i + 1]["start"] if i + 1 < len(lines) else tl["duration"]
         end = min(ln["end"] + 0.3, nxt - 0.02)
         if ln["start"] - 0.05 <= t < end:
+            text, t0 = (phrase_at(ln["text"], ln["start"], ln["end"], t) if SUB_PHRASES else (ln["text"], ln["start"]))
+            ln = dict(ln, text=text, start=t0)
             k = e_back(min((t - ln["start"] + 0.05) / 0.18, 1), 2.4)
             sw_, sc_ = SUB_STROKE or (0, PAPER)
-            _, _, sw, sh = text_sprite(ln["text"], SUB_SIZE, "kanitsb", SUB_COLOR, sw_, sc_, SUB_W)
+            _, _, sw, sh = text_sprite(ln["text"], size, "kanitsb", SUB_COLOR, sw_, sc_, SUB_W)
             fit = min(1.0, (SUB_W + 40) / sw, (SAFE_BOTTOM - SUB_TOP - 10) / sh)   # ย่อให้พอดีกรอบ
-            g.text(ln["text"], W / 2, SUB_TOP + sh * fit / 2, SUB_SIZE, "kanitsb", SUB_COLOR,
+            g.text(ln["text"], W / 2, SUB_TOP + sh * fit / 2, size, "kanitsb", SUB_COLOR,
                    sc=(0.85 + 0.15 * k) * fit, maxw=SUB_W, stroke=sw_, stroke_color=sc_)
             return
 
@@ -205,6 +227,27 @@ def render_chunk(args):
     return path
 
 
+def mux(video, out):
+    """รวมภาพ + เสียงพากย์ (+ เสียงบรรยากาศถ้าตอนนั้นตั้ง AMBIENCE) -> mp4 ความดัง -14 LUFS"""
+    narr = os.path.join(BUILD, "narration.wav")
+    src = ["-f", "concat", "-safe", "0", "-i", video] if video.endswith(".txt") else ["-i", video]
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", *src, "-i", narr]
+    if AMBIENCE:
+        d = TL["duration"]
+        rain, drone = AMBIENCE.get("rain", 0.06), AMBIENCE.get("drone", 0.12)
+        fc = (f"anoisesrc=c=pink:a=1:d={d}:r=48000,highpass=f=400,lowpass=f=6500,"
+              f"volume='{rain}*(0.85+0.15*sin(t*0.37))':eval=frame[rain];"
+              f"sine=f=55:d={d}:r=48000[s1];sine=f=82.4:d={d}:r=48000[s2];"
+              f"[s1][s2]amix=inputs=2,tremolo=f=0.12:d=0.6,lowpass=f=180,volume={drone}[drone];"
+              f"[1:a]aresample=48000[v];[v][rain][drone]amix=inputs=3:normalize=0:duration=first,"
+              f"loudnorm=I=-14:TP=-1.5:LRA=11[a]")
+        cmd += ["-filter_complex", fc, "-map", "0:v", "-map", "[a]"]
+    else:
+        cmd += ["-map", "0:v", "-map", "1:a", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11"]
+    cmd += ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-shortest", "-movflags", "+faststart", out]
+    subprocess.run(cmd, check=True)
+
+
 def init_worker():
     global TL
     TL = load_timeline()
@@ -216,8 +259,13 @@ def main():
     ap.add_argument("--still", type=float, nargs="*")
     ap.add_argument("--workers", type=int, default=os.cpu_count())
     ap.add_argument("--out", default=os.path.join(ROOT, "output", "clip.mp4"))
+    ap.add_argument("--remux", help="ใช้ภาพจาก mp4 เดิม แค่ทำเสียงใหม่ (เช่น เปลี่ยนเสียงบรรยากาศ)")
     args = ap.parse_args()
     TL = load_timeline()
+    if args.remux:
+        mux(args.remux, args.out)
+        print("done ->", args.out)
+        return
     if args.still:
         from PIL import Image
         for s in args.still:
@@ -234,10 +282,7 @@ def main():
     with open(lst, "w") as f:
         f.writelines(f"file '{p}'\n" for p in paths)
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst,
-                    "-i", os.path.join(BUILD, "narration.wav"), "-map", "0:v", "-map", "1:a",
-                    "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
-                    "-ar", "48000", "-shortest", "-movflags", "+faststart", args.out], check=True)
+    mux(lst, args.out)
     for p in paths:
         os.remove(p)
     print("done ->", args.out)
