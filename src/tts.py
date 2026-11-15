@@ -26,6 +26,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="models/vits-mms-tha")
     ap.add_argument("--speed", type=float, default=1.4, help=">1 = พูดเร็วขึ้น")
+    ap.add_argument("--gap", type=float, default=timeline.LINE_GAP, help="ช่องว่างระหว่างบรรทัด")
+    ap.add_argument("--scene-gap", type=float, default=timeline.SCENE_GAP, help="ช่องว่างระหว่างฉาก")
     ap.add_argument("--out", default=os.path.join("build", os.environ.get("EPISODE", "alaska")))
     a = ap.parse_args()
     tts = sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(
@@ -38,12 +40,13 @@ def main():
     for scene, lines in SCENES:
         for disp, spoken in lines:
             # โมเดลไม่มีตัว "ำ" ให้แยกเป็น นิคหิต + า
+            spoken = spoken.replace("...", " ").replace('"', "").strip()
             r = tts.generate(spoken.replace("ำ", "ํา"), sid=0, speed=a.speed)
             x = trim(np.array(r.samples, np.float32))
             n = int(len(x) * timeline.SR / r.sample_rate)
             x = np.interp(np.linspace(0, len(x) - 1, n), np.arange(len(x)), x).astype(np.float32)
             clips.append((scene, disp, x))
-    timeline.build(clips, a.out)
+    timeline.build(clips, a.out, a.gap, a.scene_gap)
 
 
 if __name__ == "__main__":

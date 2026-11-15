@@ -16,7 +16,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
 import camera  # noqa: E402
-from gfx import INK, PAPER, W, H, Draw, e_back, e_io, text_sprite  # noqa: E402
+from gfx import INK, LANDSCAPE, PAPER, W, H, Draw, e_back, e_io, text_sprite  # noqa: E402
 from script_data import COVER, HEADER  # noqa: E402
 import importlib.util  # noqa: E402
 
@@ -29,9 +29,12 @@ SCENES, NO_IRIS = _scenes.SCENES, getattr(_scenes, "NO_IRIS", set())
 CAMERA = getattr(_scenes, "CAMERA", {})
 TRANSITIONS = getattr(_scenes, "TRANSITIONS", {})
 OWN_COVER = getattr(_scenes, "OWN_COVER", False)   # ตอนที่วาดหน้าปกเองใน s_hook
+BG = getattr(_scenes, "BG", PAPER)                   # สีพื้นหลัง (ค่าเริ่มต้น = ขาว)
+SUB_COLOR = getattr(_scenes, "SUB_COLOR", INK)       # ซับ: ค่าเริ่มต้นตัวดำไม่มีขอบ
+SUB_STROKE = getattr(_scenes, "SUB_STROKE", None)    # (ความหนา, สี) = ซับมีขอบ สำหรับพื้นมืด
 
 BUILD = os.path.join(ROOT, "build", EPISODE)
-FPS = 60
+FPS = int(os.environ.get("FPS", 60))
 # ย่อฉากเข้าด้านบน เว้นพื้นที่ล่าง 15% และขอบขวาให้ชื่อ/คำอธิบาย/ปุ่มของแพลตฟอร์ม
 SAFE_SCALE = 0.92
 SAFE_TOP = 50
@@ -40,7 +43,11 @@ SCENE_BOTTOM = 1420           # ขอบล่างของภาพในพ
 SUB_TOP = 1380   # ขอบบนของซับ พิกัดจอ (ซับวาดนอกการย่อฉาก; 2 บรรทัดยังจบเหนือ SAFE_BOTTOM)
 SUB_SIZE = 74
 SUB_W = 900
+if LANDSCAPE:   # แนวนอน (YouTube): ไม่ต้องเว้นที่ให้ปุ่มแอป ซับอยู่ล่างจอ
+    SAFE_SCALE, SAFE_TOP, SAFE_BOTTOM, SCENE_BOTTOM = 1.0, 0, H - 20, H
+    SUB_TOP, SUB_SIZE, SUB_W = 900, 56, 1500
 
+IRIS_Y = H / 2 if LANDSCAPE else 860
 TL = None
 
 
@@ -54,6 +61,8 @@ def load_timeline():
 
 
 def header(g, t, tl):
+    if not HEADER:
+        return
     start = tl["scenes"][1]["start"] + 2.0
     if t < start:
         return
@@ -72,10 +81,11 @@ def subtitles(g, t, tl):
         end = min(ln["end"] + 0.3, nxt - 0.02)
         if ln["start"] - 0.05 <= t < end:
             k = e_back(min((t - ln["start"] + 0.05) / 0.18, 1), 2.4)
-            _, _, sw, sh = text_sprite(ln["text"], SUB_SIZE, "kanitsb", INK, 0, PAPER, SUB_W)
+            sw_, sc_ = SUB_STROKE or (0, PAPER)
+            _, _, sw, sh = text_sprite(ln["text"], SUB_SIZE, "kanitsb", SUB_COLOR, sw_, sc_, SUB_W)
             fit = min(1.0, (SUB_W + 40) / sw, (SAFE_BOTTOM - SUB_TOP - 10) / sh)   # ย่อให้พอดีกรอบ
-            g.text(ln["text"], W / 2, SUB_TOP + sh * fit / 2, SUB_SIZE, "kanitsb", INK,
-                   sc=(0.85 + 0.15 * k) * fit, maxw=SUB_W)
+            g.text(ln["text"], W / 2, SUB_TOP + sh * fit / 2, SUB_SIZE, "kanitsb", SUB_COLOR,
+                   sc=(0.85 + 0.15 * k) * fit, maxw=SUB_W, stroke=sw_, stroke_color=sc_)
             return
 
 
@@ -137,7 +147,7 @@ def render_frame(frame):
     t = frame / FPS
     surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, W, H)
     ctx = cairo.Context(surf)
-    ctx.set_source_rgba(*PAPER)
+    ctx.set_source_rgba(*BG)
     ctx.paint()
     g = Draw(ctx, t, frame)
     ctx.save()
@@ -152,11 +162,11 @@ def render_frame(frame):
         camera.transition_for(i, s["name"], TRANSITIONS)
     if prev is not None and lt < camera.TR and kind == "iris":
         draw_scene(g, prev, t)
-        r = e_io(lt / camera.TR) * 1250
+        r = e_io(lt / camera.TR) * (1250 if not LANDSCAPE else 1150)
         ctx.save()
-        ctx.arc(W / 2, 860, r, 0, 2 * math.pi)
+        ctx.arc(W / 2, IRIS_Y, r, 0, 2 * math.pi)
         ctx.clip()
-        ctx.set_source_rgba(*PAPER)
+        ctx.set_source_rgba(*BG)
         ctx.paint()
         draw_scene(g, s, t)
         ctx.restore()
@@ -165,7 +175,7 @@ def render_frame(frame):
         ctx.clip()
         ctx.set_source_rgba(*INK)
         ctx.set_line_width(12)
-        ctx.arc(W / 2, 860, r, 0, 2 * math.pi)
+        ctx.arc(W / 2, IRIS_Y, r, 0, 2 * math.pi)
         ctx.stroke()
         ctx.restore()
     elif prev is not None and lt < camera.TR and kind != "cut":

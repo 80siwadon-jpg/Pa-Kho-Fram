@@ -8,9 +8,9 @@
 """
 import math
 
-from gfx import e_in, e_io, e_out
+from gfx import LANDSCAPE, W, e_in, e_io, e_out
 
-CENTER = (540, 820)      # จุดศูนย์กลางเวที (พิกัดฉาก)
+CENTER = (960, 540) if LANDSCAPE else (540, 820)      # จุดศูนย์กลางเวที (พิกัดฉาก)
 TR = 0.55                # ความยาวทรานซิชัน (วินาที)
 
 # ท่ากล้อง: p 0..1 -> (zoom, dx, dy, rot องศา)   dx/dy คือการเลื่อนภาพ (กล้องแพนขวา = ภาพเลื่อนซ้าย)
@@ -78,6 +78,6 @@ def transition_frames(kind, k):
     if kind == "zoom":     # ซูมทะลุ: ฉากเก่าพุ่งเข้าหา+จางหาย ฉากใหม่ขยายจากเล็กมาเต็ม
         return (1 - e_in(k), 1 + 0.35 * e_in(k), 0, 0), (e_out(k), 0.88 + 0.12 * e_out(k), 0, 0)
     if kind == "whip":     # whip pan: ฉากเก่าเหวี่ยงออกซ้าย ฉากใหม่เหวี่ยงเข้าจากขวา
-        return (1.0, 1.0, -1300 * e_in(k), 0), (1.0, 1.0, 1300 * (1 - e_out(k)), 0)
+        return (1.0, 1.0, -1.2 * W * e_in(k), 0), (1.0, 1.0, 1.2 * W * (1 - e_out(k)), 0)
     # fade: ครอสเฟดนุ่ม ๆ + ซูมเล็กน้อย
     return (1 - e_io(k), 1 + 0.04 * k, 0, 0), (e_io(k), 1.04 - 0.04 * k, 0, 0)

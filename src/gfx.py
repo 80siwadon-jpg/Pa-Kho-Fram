@@ -8,8 +8,11 @@ import cairo
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-W, H = 1080, 1920
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# ตอนที่มีไฟล์ episodes/<ตอน>/FORMAT เขียนว่า landscape = แนวนอน 1920x1080 (เช่น คลิปเล่าเรื่องผี room404)
+_FMT = os.path.join(ROOT, "episodes", os.environ.get("EPISODE", "alaska"), "FORMAT")
+LANDSCAPE = os.path.exists(_FMT) and open(_FMT).read().strip() == "landscape"
+W, H = (1920, 1080) if LANDSCAPE else (1080, 1920)
 FONTS = {
     "kanitsb": os.path.join(ROOT, "assets/fonts/Kanit-SemiBold.ttf"),
     "kanitm": os.path.join(ROOT, "assets/fonts/Kanit-Medium.ttf"),
@@ -357,7 +360,7 @@ class Draw:
 
     # ขอบปลอดภัยของตัวหนังสือ: วัดตำแหน่งที่เห็นจริงหลังกล้อง (ซูม/แพน) ในพิกัดฉาก — จอเห็น x ≈ -47..1127
     # เผื่อขอบซ้าย 40 และปุ่มด้านขวาของแอป (x > ~990)
-    SAFE_X0, SAFE_X1 = 40, 990
+    SAFE_X0, SAFE_X1 = (60, W - 60) if LANDSCAPE else (40, 990)
 
     def _fit(self, s, x, y, size, fnt, sc, stroke, maxw, anchor):
         """ย่อตัวหนังสือที่ยาวเกินขอบปลอดภัย (คิดในพิกัดฉาก ไม่ขึ้นกับการขยับกล้อง)"""
@@ -695,7 +698,7 @@ class Draw:
         _, _, w1, _ = text_sprite(name, 50, "kanit")
         _, _, w2, _ = text_sprite(role, 36, "kanitm", GREY)
         w = max(w1, w2) + 40
-        x = min(max(x, 120 + w / 2), 940 - w / 2)   # ป้ายชื่อไม่ล้นขอบจอ (เผื่อกล้องซูม/แพน)
+        x = min(max(x, 120 + w / 2), (W - 180 if LANDSCAPE else 940) - w / 2)   # ป้ายชื่อไม่ล้นขอบจอ (เผื่อกล้องซูม/แพน)
         with self.alpha(a):
             with self.at(x, y, k):
                 self.rrect(-w / 2, -66, w, 132, 28, WHITE, 6)

@@ -11,7 +11,7 @@ SR = 48000
 LEAD_IN = 0.3      # วินาทีก่อนเริ่มพูด
 LINE_GAP = 0.08    # ช่องว่างระหว่างบรรทัด (สั้น = กระชับ)
 SCENE_GAP = 0.18   # ช่องว่างระหว่างฉาก
-TAIL = 1.2         # เผื่อท้ายคลิป
+TAIL = float(os.environ.get("TAIL", 1.2))   # เผื่อท้ายคลิป (ตอนที่มีการ์ดปิดท้ายตั้ง TAIL=6)
 
 
 def build(clips, out_dir, line_gap=LINE_GAP, scene_gap=SCENE_GAP):

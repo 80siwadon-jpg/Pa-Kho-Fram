@@ -40,6 +40,8 @@ def verify(orig):
 
 def grid(paths, out, cols=6, tw=360, th=640):
     from PIL import Image, ImageDraw, ImageFont
+    if Image.open(paths[0][1]).width > Image.open(paths[0][1]).height:   # ตอนแนวนอน
+        cols, tw, th = 4, 560, 315
     font = ImageFont.truetype(os.path.join(ROOT, "assets/fonts/Kanit-Bold.ttf"), 26)
     rows = (len(paths) + cols - 1) // cols
     sheet = Image.new("RGB", (cols * tw, rows * (th + 34)), "white")
