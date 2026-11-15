@@ -5,6 +5,7 @@
 HEADER = None   # ไม่มีป้าย "วันนี้ในอดีต"
 COVER = None    # ไม่มีหน้าปกโพลารอยด์ (เปิดด้วยฉากเลย)
 VOICE = "Charon"
+ELLIPSIS = ","   # ... = เว้นจังหวะสั้น ๆ แบบคนเล่าเรื่องผี
 TTS_PROMPT = """# AUDIO PROFILE: The Midnight Storyteller
 A seasoned Thai male ghost-story narrator, late 40s. Deep, low, warm baritone with slight gravel.
 Calm, unhurried, completely in control. Never theatrical, never shouting. His calmness is what makes listeners afraid.

@@ -26,5 +26,6 @@ SCENES = [(name, [_line(ln) for ln in lines]) for name, lines in _mod.SCENES]
 HEADER = getattr(_mod, "HEADER", "วันนี้ในอดีต")
 # หน้าปกโพลารอยด์: {"date": "28 ตุลาคม 1886", "title": "...", "photo": "<id>" หรือไม่ใส่, "art": <วินาที>}
 COVER = getattr(_mod, "COVER", None)
+ELLIPSIS = getattr(_mod, "ELLIPSIS", None)      # แทน ... ในเสียง Gemini (ไม่ใส่ = ตัดทิ้งแบบเดิม)
 VOICE = getattr(_mod, "VOICE", None)            # เสียง Gemini ของตอนนี้ (ไม่ใส่ = Enceladus ของช่อง)
 TTS_PROMPT = getattr(_mod, "TTS_PROMPT", None)  # Director's notes ของตอนนี้ (ต้องมี {text})

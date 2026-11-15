@@ -24,7 +24,7 @@ import wave
 sys.path.insert(0, os.path.dirname(__file__))
 import timeline  # noqa: E402
 import voice  # noqa: E402
-from script_data import SCENES, TAGS, TTS_PROMPT, VOICE  # noqa: E402
+from script_data import ELLIPSIS, SCENES, TAGS, TTS_PROMPT, VOICE  # noqa: E402
 
 API = "https://generativelanguage.googleapis.com/v1beta"
 PROMPT = """# AUDIO PROFILE: Thai history storyteller
@@ -89,11 +89,18 @@ def speak(text, models, voice_name, key, cache):
             },
         }
         pcm = None
+        keys = list(key) if isinstance(key, list) else [key]
         for attempt in range(2):   # บางครั้งตอบกลับแบบไม่มีเสียง (finishReason SAFETY/OTHER) -> ลองใหม่ 1 ครั้ง
-            try:
-                r = call(f"models/{model}:generateContent", body, key)
-            except QuotaError:
-                print(f"  โควตารายวันของ {model} หมด ลองโมเดลถัดไป")
+            r = None
+            while keys:   # หลายคีย์ (GEMINI_API_KEYS): โควตาคีย์หนึ่งหมด -> ใช้คีย์ถัดไปกับโมเดลเดิม
+                try:
+                    r = call(f"models/{model}:generateContent", body, keys[0])
+                    break
+                except QuotaError:
+                    print(f"  โควตารายวันของ {model} (คีย์ที่ใช้อยู่) หมด ลองคีย์ถัดไป")
+                    keys.pop(0)
+            if r is None:
+                print(f"  โควตา {model} หมดทุกคีย์ ลองโมเดลถัดไป")
                 break
             cand = r["candidates"][0]
             if "content" in cand:
@@ -114,7 +121,8 @@ def speak(text, models, voice_name, key, cache):
 
 
 def clean(s):
-    return s.replace("...", "").replace('"', "").replace("\u200b", "")
+    # ELLIPSIS ใน script.py (เช่น ",") = เก็บจังหวะหยุดสั้นตรง ... ไว้ให้เล่าเป็นธรรมชาติ
+    return s.replace("...", ELLIPSIS or "").replace('"', "").replace("\u200b", "")
 
 
 def main():
@@ -126,13 +134,15 @@ def main():
     ap.add_argument("--out", default=os.path.join("build", os.environ.get("EPISODE", "alaska")))
     a = ap.parse_args()
     key = os.environ.get("GEMINI_API_KEY")
-    if not key:
+    keys = [k.strip() for k in os.environ.get("GEMINI_API_KEYS", "").split(",") if k.strip()]
+    if not key and not keys:
         sys.exit("ไม่พบ GEMINI_API_KEY")
+    key = keys or key
     cache = os.path.join(a.out, "tts_cache")
     os.makedirs(cache, exist_ok=True)
 
     items = [(scene, disp) for scene, lines in SCENES for disp, _ in lines]
-    models = [a.model] if a.model else tts_models(key)
+    models = [a.model] if a.model else tts_models(key[0] if isinstance(key, list) else key)
 
     # บทยาวเกิน ~1400 ตัวอักษร โมเดลส่งเสียงไม่จบ -> แบ่งเป็นก้อนตามฉาก (บทสั้นยังเป็นก้อนเดียว แคชเดิมใช้ได้)
     chunks, cur, n, gi = [], [], 0, 0
@@ -172,7 +182,10 @@ def main():
         print(f"chunk {ci + 1}/{len(chunks)} model: {model} voice: {a.voice}")
         x = voice.load(path, a.tempo)
         runs = voice.speech_runs(x, min_gap=0.04)
-        lines += voice.split_lines(x, runs, [voice.weight(t) for t in plain], keep_gap=0.08)
+        # WHISPER=<โฟลเดอร์ sherpa-onnx-whisper-small> = ขยับจุดตัดบรรทัดให้ตรงคำพูดจริง (บทที่มีจังหวะหยุดกลางบรรทัด)
+        wdir = os.environ.get("WHISPER")
+        ref = voice.WhisperRefiner(wdir, [d for _, _, d in chunk], span=int(os.environ.get("WHISPER_SPAN", 4))) if wdir else None
+        lines += voice.split_lines(x, runs, [voice.weight(t) for t in plain], keep_gap=0.08, refine=ref)
     for (_, disp), y in zip(items, lines):
         print(f"  {len(y) / timeline.SR:4.1f}s  {disp}")
     timeline.build([(s, d, y) for (s, d), y in zip(items, lines)], a.out, a.gap, a.gap + 0.12)
