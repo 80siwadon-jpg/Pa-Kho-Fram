@@ -36,17 +36,17 @@ SKY_DUSK = hexc("#e9a77a")
 GREY_PHOTO = hexc("#9b9b96")
 
 # ---------------------------------------------------------------- looks
-PETE = Look(hair="part", hair_col=hexc("#1c1814"), skin=hexc("#e2b48e"), outfit="hoodie", suit=hexc("#8d9298"),
-            pants=hexc("#3b4250"), shoes=hexc("#2a2a2a"), glasses="thin", stubble=0.35, w=58, age=0.15, jaw=0.35)
-MUN = Look(hair="bald", hair_col=hexc("#e8e6e0"), skin=hexc("#cf9c74"), outfit="tee", suit=hexc("#eeeae0"),
+PETE = Look(hair="part", hair_col=hexc("#1c1814"), skin=hexc("#d39a6c"), outfit="hoodie", suit=hexc("#8d9298"),
+            pants=hexc("#3b4250"), shoes=hexc("#2a2a2a"), glasses="thin", stubble=0.35, w=58, age=0.15, jaw=0.35, build=0.86)
+MUN = Look(hair="bald", hair_col=hexc("#e8e6e0"), skin=hexc("#b88259"), outfit="tee", suit=hexc("#eeeae0"),
            pants=hexc("#6b4f39"), glasses="round", age=1.0, w=60, brow=1.4, jowls=0.3, build=0.95, height=0.92)
-MOTHER = Look(hair="short", hair_col=hexc("#6d6a66"), skin=hexc("#e0b394"), outfit="tee", suit=hexc("#a9c4d8"),
+MOTHER = Look(hair="short", hair_col=hexc("#6d6a66"), skin=hexc("#d6a07a"), outfit="tee", suit=hexc("#a9c4d8"),
               pants=hexc("#a9c4d8"), age=0.6, w=54, build=0.85, jaw=0.2)
-FON = Look(hair="long", hair_col=hexc("#1a1512"), skin=hexc("#e6ba98"), outfit="tee", suit=hexc("#26262b"),
+FON = Look(hair="long", hair_col=hexc("#1a1512"), skin=hexc("#dca880"), outfit="tee", suit=hexc("#26262b"),
            pants=hexc("#26262b"), w=52, build=0.8, jaw=0.1, age=0.05, height=0.95)
-KENG = Look(hair="crew", hair_col=hexc("#17130f"), skin=hexc("#d7a47c"), outfit="tee", suit=hexc("#f2f2ee"),
+KENG = Look(hair="crew", hair_col=hexc("#17130f"), skin=hexc("#c48a5e"), outfit="tee", suit=hexc("#f2f2ee"),
             pants=hexc("#40454d"), w=54, jaw=0.25, age=0.05)
-KILLER = Look(hair="buzz", hair_col=hexc("#1a1714"), skin=hexc("#b9845e"), outfit="tee", suit=hexc("#2b2f36"),
+KILLER = Look(hair="buzz", hair_col=hexc("#1a1714"), skin=hexc("#a8714a"), outfit="tee", suit=hexc("#2b2f36"),
               pants=hexc("#2b2f36"), w=66, jaw=0.95, build=1.35, brow=1.4, age=0.5, stubble=0.6)
 GRANDMA_BW = Look(hair="bun", hair_col=hexc("#5a5a58"), skin=hexc("#c9c9c4"), outfit="tee", suit=hexc("#e4e4e0"),
                   age=0.9, w=54, jaw=0.2, build=0.85)
@@ -602,3 +602,202 @@ def killer_reflection(g, cx, cy, sc=1.0, raise_k=1.0):
                shadow=False)
         vest(g, -10, 110, 0.24)
         pipe(g, 20, lerp(40, -130, raise_k), 0.4, 20)
+
+
+# ================================================================ หัวสไตล์การ์ตูนแบนเรียบ (ทรงไข่ คอยาว หน้าเรียบง่าย)
+import people as _people  # noqa: E402
+
+
+def _darker(col, k=0.78):
+    return (col[0] * k, col[1] * k, col[2] * k, col[3] if len(col) > 3 else 1.0)
+
+
+def _egg(c, w, top=-96, chin=84, fx=0.0):
+    pts = [(0, top), (w * 0.62, top + 6), (w * 0.9, top + 40), (w * 0.95, -10), (w * 0.86, 30),
+           (w * 0.62, 62), (fx * 0.4 + w * 0.22, chin - 2), (fx * 0.4, chin)]
+    full = pts + [(-x + fx * 0.8 if y > 20 else -x, y) for x, y in reversed(pts[1:-1])]
+    _smooth_path(c, full)
+    return full
+
+
+def _fill_grad(c, col, dark=0.82):
+    x0, y0, x1, y1 = c.fill_extents()
+    c.set_source_rgba(*col)
+    c.fill_preserve()
+    lg = cairo.LinearGradient(x0, y0, x1, y0)
+    lg.add_color_stop_rgba(0, 1, 1, 1, 0.06)
+    lg.add_color_stop_rgba(0.55, 0, 0, 0, 0)
+    lg.add_color_stop_rgba(1, 0.1, 0.05, 0.05, 1 - dark)
+    c.set_source(lg)
+    c.fill()
+
+
+def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw=4.5):
+    """หัวที่จุดกำเนิด = กลางหน้า (ระดับตา ~ -8) — อินเทอร์เฟซเดียวกับ people.head"""
+    c, t, w = g.c, g.t, look.w * 0.86
+    fx = turn * w * 0.32
+    hair = look.hair_col
+    skin = look.skin
+    # ผมด้านหลัง
+    if look.hair in ("long",):
+        _smooth_path(c, [(-w * 1.05, -60), (0, -112), (w * 1.05, -60), (w * 1.12, 120), (w * 0.9, 210), (-w * 0.9, 210), (-w * 1.12, 120)])
+        _fill_grad(c, hair, 0.75)
+    if look.hair == "bun":
+        g.circle(0, -122, w * 0.42, hair, 0)
+    # คอ (ยาว เรียว)
+    _rr(c, -w * 0.36, 30, w * 0.72, 110, 12)
+    _fill_grad(c, _darker(skin, 0.92), 0.8)
+    # หู
+    for sx in (-1, 1):
+        if sx * turn > 0.5:
+            continue
+        c.save()
+        c.translate(sx * w * 0.93 + fx * 0.2, 0)
+        c.scale(1, 1.6)
+        c.new_path()
+        c.arc(0, 0, w * 0.15, 0, 2 * math.pi)
+        c.restore()
+        _fill_grad(c, _darker(skin, 0.95), 0.85)
+    # หน้า
+    _egg(c, w, fx=fx)
+    _fill_grad(c, skin, 0.8)
+    # แก้ม + เงาใต้คาง
+    for sx in (-1, 1):
+        glow(g, sx * w * 0.5 + fx, 30, w * 0.32, (0.88, 0.45, 0.4, 1), 0.18)
+    if look.stubble > 0.3:
+        c.save()
+        _egg(c, w, fx=fx)
+        c.clip()
+        sg = cairo.LinearGradient(0, 30, 0, 80)
+        sg.add_color_stop_rgba(0, 0.15, 0.12, 0.12, 0)
+        sg.add_color_stop_rgba(1, 0.15, 0.12, 0.12, 0.18 * look.stubble)
+        c.set_source(sg)
+        c.paint()
+        c.restore()
+    # ริ้วรอย (คนแก่: เส้นบาง ๆ ใต้ตา หน้าผาก)
+    line = _darker(skin, 0.6)
+    if look.age > 0.55:
+        for k in range(2):
+            _stroke(c, [(-w * 0.32 + fx, -62 + k * 10), (fx, -65 + k * 10), (w * 0.32 + fx, -62 + k * 10)], 2.2, line, 0.6)
+        for sx in (-1, 1):
+            _stroke(c, [(sx * w * 0.5 + fx, 10), (sx * w * 0.36 + fx, 16), (sx * w * 0.22 + fx, 12)], 2, line, 0.55)
+            _stroke(c, [(sx * w * 0.26 + fx, 40), (sx * w * 0.32 + fx, 62)], 2, line, 0.5)
+    # ตา
+    blink = mood not in ("shock", "shout") and ((t * 0.45 + seed * 0.37) % 3.6) < 0.1
+    ey = -8
+    sad = mood in ("sad", "worry")
+    for sx in (-1, 1):
+        ex = sx * w * 0.36 + fx
+        ew, eh = w * 0.2, w * (0.15 if mood != "shock" else 0.2)
+        if blink or mood == "smile_closed":
+            _stroke(c, [(ex - ew, ey), (ex, ey + 4), (ex + ew, ey)], 3, _darker(hair, 1.0), 1.0)
+        else:
+            c.save()
+            c.translate(ex, ey)
+            c.scale(1, eh / ew)
+            c.new_path()
+            c.arc(0, 0, ew, 0, 2 * math.pi)
+            c.restore()
+            c.set_source_rgba(0.98, 0.97, 0.95, 1)
+            c.fill_preserve()
+            c.save()
+            c.clip()
+            ix, iy = ex + look_at[0] * ew * 0.35, ey + look_at[1] * eh * 0.3
+            g.circle(ix, iy, eh * 0.95, hexc("#3a2a20"), 0)
+            g.circle(ix, iy, eh * 0.5, hexc("#120c08"), 0)
+            g.circle(ix - eh * 0.3, iy - eh * 0.35, eh * 0.28, (1, 1, 1, 0.95), 0)
+            c.restore()
+            # เปลือกตาบน
+            _stroke(c, [(ex - ew * 1.05, ey + 1), (ex, ey - eh * 1.08), (ex + ew * 1.05, ey + 1)], 3, hexc("#2a1d16"), 1.0)
+            if sad or look.age > 0.55:
+                _stroke(c, [(ex - ew * 0.8, ey + eh * 1.3), (ex + ew * 0.8, ey + eh * 1.3)], 2, line, 0.5)   # ใต้ตา
+    # คิ้ว
+    tilt = {"angry": -0.32, "shout": -0.32, "firm": -0.15, "sad": 0.3, "worry": 0.3, "shock": 0.0, "smug": -0.1}.get(mood, 0.0)
+    by = ey - w * 0.3 - (6 if mood == "shock" else 0)
+    for sx in (-1, 1):
+        bx = sx * w * 0.36 + fx
+        inner = by - tilt * w * 0.25
+        outer = by + tilt * w * 0.12
+        _stroke(c, [(bx - sx * w * 0.2, inner), (bx + sx * w * 0.22, outer)], 3.5 * look.brow + 1.5, hexc("#2a1d16") if look.hair != "bald" else hexc("#d9d6cf"), 1.0)
+    # จมูก (เงาเล็ก ๆ)
+    _stroke(c, [(fx + w * 0.05, 12), (fx + w * 0.1, 28), (fx - w * 0.02, 32)], 2.4, line, 0.75)
+    # ปาก
+    my = 52
+    open_ = 0.0
+    if talk:
+        open_ = max(0.0, math.sin(t * 15 + seed)) * float(talk) * 0.8
+    if mood in ("shock", "shout"):
+        open_ = max(open_, 1.0)
+    mw = w * (0.18 if mood != "shout" else 0.3)
+    if open_ > 0.15:
+        c.save()
+        c.translate(fx, my)
+        c.scale(1, (0.4 + 0.6 * open_))
+        c.new_path()
+        c.arc(0, 0, mw, 0, 2 * math.pi)
+        c.restore()
+        c.set_source_rgba(0.35, 0.12, 0.12, 1)
+        c.fill()
+    else:
+        curve = {"smile": 7, "smug": 4, "sad": -6, "worry": -4, "angry": -4, "firm": -1}.get(mood, 1)
+        _stroke(c, [(fx - mw, my - curve * 0.4), (fx, my + curve * 0.6), (fx + mw * (1.3 if mood == "smug" else 1), my - curve * (0.8 if mood == "smug" else 0.4))],
+                3, hexc("#6a2e26"), 0.9)
+    # ผมด้านหน้า
+    h = look.hair
+    if h == "bald":   # ศีรษะล้าน + ผมขาวเป็นวงรอบข้าง
+        for sx in (-1, 1):
+            _smooth_path(c, [(sx * w * 0.55, -80), (sx * w * 0.98, -50), (sx * w * 1.0, -10), (sx * w * 0.86, -16), (sx * w * 0.8, -60)])
+            _fill_grad(c, hair, 0.85)
+        c.save()
+        _egg(c, w, fx=fx)
+        c.clip()
+        glow(g, -w * 0.3, -80, w * 0.5, (1, 1, 1, 1), 0.18)
+        c.restore()
+    elif h in ("part", "crew", "short", "buzz", "long", "bun"):
+        cap = {"part": 0.45, "crew": 0.42, "short": 0.5, "buzz": 0.3, "long": 0.5, "bun": 0.45}[h]
+        c.save()
+        top = -96
+        hairline = top + (96 + 84) * cap * 0.42
+        pts = [(-w * 1.0, -20), (-w * 0.98, -60), (-w * 0.6, top - 8), (0, top - 14), (w * 0.6, top - 8), (w * 0.98, -60), (w * 1.0, -20)]
+        if h == "part":   # ผมแสกมีปอยหน้าม้า
+            pts += [(w * 0.85, -48), (w * 0.4, hairline - 8), (w * 0.1, hairline + 6), (-w * 0.3, hairline - 2), (-w * 0.85, -42)]
+        elif h in ("long", "bun"):
+            pts += [(w * 0.8, -40), (w * 0.3, hairline - 18), (0, hairline - 28), (-w * 0.3, hairline - 18), (-w * 0.8, -40)]
+        elif h == "short":
+            pts += [(w * 0.9, -10), (w * 0.7, -50), (w * 0.2, hairline - 6), (-w * 0.5, hairline - 4), (-w * 0.9, -10)]
+        else:
+            pts += [(w * 0.88, -46), (w * 0.4, hairline - 4), (-w * 0.4, hairline - 4), (-w * 0.88, -46)]
+        _smooth_path(c, pts)
+        _fill_grad(c, hair, 0.8)
+        if h == "buzz":
+            _smooth_path(c, pts)
+            c.set_source_rgba(*skin[:3], 0.12)
+            c.fill()
+        for k in range(3):   # ปอยผมไฮไลต์
+            _stroke(c, [(-w * 0.4 + k * w * 0.3, top), (-w * 0.3 + k * w * 0.3, top + 20)], 2, (1, 1, 1, 1), 0.12)
+        c.restore()
+        if h == "long":   # ผมยาวด้านข้างทับหน้า
+            for sx in (-1, 1):
+                _smooth_path(c, [(sx * w * 0.8, -40), (sx * w * 1.05, -30), (sx * w * 1.0, 120), (sx * w * 0.82, 130), (sx * w * 0.86, 20)])
+                _fill_grad(c, hair, 0.8)
+    # แว่น
+    if look.glasses:
+        col = hexc("#2a2622")
+        rnd = look.glasses.startswith("round")
+        for sx in (-1, 1):
+            ex = sx * w * 0.36 + fx
+            c.new_path()
+            if rnd:
+                c.arc(ex, ey, w * 0.27, 0, 2 * math.pi)
+            else:
+                _rr(c, ex - w * 0.29, ey - w * 0.19, w * 0.58, w * 0.38, 8)
+            c.set_source_rgba(0.85, 0.92, 0.95, 0.18)
+            c.fill_preserve()
+            c.set_source_rgba(*col)
+            c.set_line_width(3.2 if not look.glasses.endswith("thin") else 3.0)
+            c.stroke()
+        _stroke(c, [(fx - w * 0.09, ey - 2), (fx + w * 0.09, ey - 2)], 3, col, 1.0)
+
+
+_people.head = flat_head
+head = flat_head
