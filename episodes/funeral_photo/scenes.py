@@ -13,7 +13,7 @@ from chars import (BG, CREAM, FON, GOLD, GRANDMA_BW, HOSP, KENG, KILLER, LAMP, M
                    incense, keng_face, killer_reflection, knife, lerp_col, phone, pipe, set_city, set_exterior,
                    set_hospital, set_road_night, set_shop, set_station, set_temple_sala, set_workroom, smoke,
                    speakers, usb, vest, vignette, wall_clock)
-from chars import light_pass  # noqa: E402
+from chars import cane, chair_back, hand_blob, hand_xy, light_pass  # noqa: E402
 from gfx import INK, WHITE, H, W, e_io, e_out, hexc, hn, lerp, pop, seg  # noqa: E402
 from people import _rr, _shade, _stroke, head, person  # noqa: E402
 
@@ -174,8 +174,10 @@ def desk_scene(g, t, screen, pete_mood="neutral", tod="night", pete=True, lit_in
     ws(g, tod)
     if tod == "night":
         glow(g, 1080, 520, 520, LAMP, 0.12)
-    if pete:
-        person(g, 640, 1180, PETE, 0.78, mood=pete_mood, pose=pose, turn=0.75, seed=1, look_at=look, talk=talk)
+    if pete:   # นั่งเก้าอี้หน้าโต๊ะ (โต๊ะบังช่วงล่าง)
+        chair_back(g, 600, 1000, 0.8)
+        person(g, 640, 1243, PETE, 0.78, mood=pete_mood, pose=pose, turn=0.75, seed=1, look_at=look, talk=talk,
+               legs=False, shadow=False)
     desk(g, 1000, 880, 1300)
     crt(g, 1150, 880, 0.75, screen)
     speakers(g, 1450, 880, 0.75)
@@ -221,12 +223,16 @@ def s_hook(g, t, L, d):
 def s_pete(g, t, L, d):
     def a(g, t, lt):
         bg(g, "city", set_city)
-        person(g, 900, 1250, PETE, 0.85, mood="neutral", pose="hold", turn=0.0, seed=1)
-        with g.at(900, 760):
-            _rr(g.c, -170, -40, 340, 160, 8)
-            _shade(g.c, hexc("#b8925e"), 3, 0.2)
-            _rr(g.c, -60, -110, 80, 80, 6)
+        person(g, 900, 1250, PETE, 0.85, mood="neutral", pose="carry", turn=0.0, seed=1)
+        hx = (hand_xy(900, 1250, PETE, 0.85, "carry", -1)[0] + hand_xy(900, 1250, PETE, 0.85, "carry", 1)[0]) / 2
+        hy = hand_xy(900, 1250, PETE, 0.85, "carry", 1)[1]
+        with g.at(hx, hy):   # กล่องของในอ้อมแขน
+            _rr(g.c, -60, -150, 80, 80, 6)
             _shade(g.c, hexc("#4a4a4a"), 3, 0.2)
+            _rr(g.c, -170, -90, 340, 150, 8)
+            _shade(g.c, hexc("#b8925e"), 3, 0.2)
+        for sx in (-1, 1):
+            hand_blob(g, hx + sx * 165, hy - 10, PETE.skin, 1.0, sx * 90)
 
     def b(g, t, lt):
         bg(g, "city", set_city, 1.3, 1000, 640)
@@ -246,6 +252,16 @@ def s_pete(g, t, L, d):
 
 
 # ================================================================ 3 mother
+def bed_patient(g, look, mood, look_at=(0, 0), hs=1.15):
+    """หัวผู้ป่วยบนหมอน (สัดส่วนเท่าคนจริงเทียบกับเตียง) + ผ้าห่มคลุมถึงคาง (พิกัดเดียวกับ bed)"""
+    with g.at(-300, -100, hs):
+        head(g, look, mood, 0.0, 0.5, look_at, 3)
+    _rr(g.c, -420, -100 + 70 * hs, 860, 210, 40)   # ผ้าห่มคลุมถึงคาง (บังคอทั้งหมด)
+    _shade(g.c, hexc("#a9c4d8"), 3, 0.25)
+    for k in range(3):
+        _stroke(g.c, [(-300 + k * 220, 70), (-260 + k * 220, 200)], 3, hexc("#7f9ab0"), 0.6)
+
+
 def bed(g, x, y, sc=1.0):
     c = g.c
     with g.at(x, y, sc):
@@ -278,9 +294,9 @@ def s_mother(g, t, L, d):
         monitor_heart(g, 1400, 520, t, 1.4)
         with g.at(700, 760):
             bed(g, 0, 200, 1.1)
-            shoulders(g, MOTHER, -300, -40, 2.0)
-            with g.at(-300, -40, 2.0):
-                head(g, MOTHER, "sad", 0.0, 0.5, (0.5, 0), 3)
+            _rr(g.c, -470, -170, 340, 150, 50)   # หมอน
+            _shade(g.c, WHITE, 3, 0.2)
+            bed_patient(g, MOTHER, "sad", (0.5, 0))
 
     def b(g, t, lt):   # ใบแจ้งค่าใช้จ่าย
         bg(g, "hosp", set_hospital, 1.5, 1300, 600)
@@ -306,12 +322,20 @@ def s_mother(g, t, L, d):
         bg(g, "hosp", set_hospital)
         with g.at(800, 760):
             bed(g, 0, 200, 1.1)
-            shoulders(g, MOTHER, -300, -40, 2.0)
-            with g.at(-300, -40, 2.0):
-                head(g, MOTHER, "smile", 0.6 * max(0, math.sin(t * 8)), 0.5, (0.6, 0.1), 3)
-        person(g, 1380, 1250, PETE, 0.85, mood="sad", pose="hold", turn=-0.7, seed=1)
-        g.blob(1100, 820, 60, 40, MOTHER.skin, 3, 2)
-        g.blob(1150, 830, 60, 40, PETE.skin, 3, 3)
+            _rr(g.c, -470, -170, 340, 150, 50)   # หมอน
+            _shade(g.c, WHITE, 3, 0.2)
+            bed_patient(g, MOTHER, "smile", (0.6, 0.1))
+            # แขนแม่ออกมาจากใต้ผ้าห่ม วางบนเตียง
+            _stroke(g.c, [(-60, 40), (180, 30), (330, 20)], 30, MOTHER.suit, 1.0)
+        mx, my = 800 + 345, 760 + 18
+        g.blob(mx, my, 34, 24, MOTHER.skin, 3, 2)
+        # พีทยืนข้างเตียง เอื้อมมือซ้ายมากุมมือแม่
+        px = 1520
+        hx, hy = hand_xy(px, 1250, PETE, 0.85, "reachL", -1)
+        py = 1250 + (my - hy)          # ปรับความสูงให้มือถึงมือแม่พอดี
+        px += (mx + 30) - hx
+        person(g, px, py, PETE, 0.85, mood="sad", pose="reachL", turn=-0.7, seed=1)
+        hand_blob(g, mx + 22, my - 6, PETE.skin, 0.9, 90)
 
     def e(g, t, lt):   # พีทนอนไม่หลับ
         fill_rect(g.c, -800, -800, W + 1600, H + 1600, hexc("#1a2028"))
@@ -346,15 +370,18 @@ def s_mun(g, t, L, d):
 
     def b(g, t, lt):
         a(g, t, lt)
-        with g.at(CX, 440, pop(lt, 0.2, 0.3) * 1.0):
-            _rr(g.c, -300, -40, 600, 80, 30)
-            _shade(g.c, hexc("#fff6d8"), 3, 0.1)
+        k = pop(lt, 0.2, 0.3)
+        if k > 0.02:   # กรอบไฮไลต์รอบข้อความ (ไม่ทับตัวหนังสือ)
+            g.c.set_source_rgba(0.95, 0.75, 0.2, 0.9)
+            g.c.set_line_width(6)
+            _rr(g.c, CX - 150 * k, 420 - 70 * k, 300 * k, 140 * k, 16)
+            g.c.stroke()
 
     def c_(g, t, lt):   # ลุงมั่น
         shop(g, "day")
-        person(g, 900, 1180, MUN, 0.82, mood="smile", pose="hold", turn=0.2, seed=2)
-        _rr(g.c, 900 - 180, 1180 - 0.82 * 0.92 * 430, 30, 400, 6)   # ไม้เท้า
-        _shade(g.c, WOOD2, 2, 0.1)
+        hx, hy = hand_xy(900, 1180, MUN, 0.82, "down", -1)
+        cane(g, hx, hy, 1180)   # ไม้เท้าอยู่ในมือซ้าย ปลายแตะพื้น
+        person(g, 900, 1180, MUN, 0.82, mood="smile", pose="down", turn=0.2, seed=2)
 
     def d_(g, t, lt):   # ป้ายร้าน
         ext(g, "day", 2.4, 970, 230)
@@ -416,12 +443,13 @@ def s_rules(g, t, L, d):
 
     def f(g, t, lt):
         shop(g, "day")
-        person(g, 650, 1180, MUN, 0.8, mood="neutral", pose="hold", turn=0.5, seed=2)
+        k = slide(lt, 0, 1, 1.2)
+        person(g, 650, 1180, MUN, 0.8, mood="neutral", pose="down", pose2="point", k=k, turn=0.5, seed=2)
         person(g, 1250, 1220, PETE, 0.84, mood="smile", pose="hold", turn=-0.5, seed=1)
-        with g.at(1050, 560, pop(lt, 0.6, 0.4)):
-            _rr(g.c, -110, -60, 220, 120, 10)
-            _shade(g.c, hexc("#c9e6c0"), 3, 0.1)
-            g.text("5,000", 0, 0, 52, "kanit", hexc("#2a6a2a"))
+        hx, hy = hand_xy(650, 1180, MUN, 0.8, "down", 1, "point", k)
+        envelope(g, hx + 80, hy, 0.38, -5)   # ซองค่าจ้างในมือลุง (ข้อความไม่โดนมือบัง)
+        g.text("5,000", hx + 92, hy - 8, 32, "kanit", hexc("#5a3a1a"))
+        hand_blob(g, hx, hy, MUN.skin, 0.9, 0)
     run_shots(g, t, L, d, [a, b, c_, d_, e, f])
 
 
@@ -434,12 +462,12 @@ def s_night1(g, t, L, d):
             _rr(g.c, 300 + k * 60, y - 40, 1200, 40, 4)
             _shade(g.c, WOOD3, 3, 0.25)
             fill_rect(g.c, 300 + k * 60, y, 1200, 110, WOOD2)
-        step = min(int(lt / 0.9), 3)
-        with g.at(800 + step * 60, 1080 - step * 150 + 20, 1.3):
-            _rr(g.c, -70, -40, 160, 50, 20)
-            _shade(g.c, hexc("#2a2a2a"), 3, 0.1)
-            _rr(g.c, -40, -260, 90, 230, 30)
-            _shade(g.c, PETE.pants, 3, 0.2)
+        u = min(lt / 3.2, 1.0) * 3   # เดินขึ้นทีละขั้น
+        step = int(u)
+        f = u - step
+        px = 760 + (step + e_io(f)) * 60
+        py = 1120 - (step + e_io(f)) * 150 - 40 * math.sin(math.pi * f)
+        person(g, px, py, PETE, 0.62, mood="worry", pose="down", turn=0.85, seed=1, lean=6)
         glow(g, 1400, 0, 700, LAMP, 0.15)
         vignette(g, 0.6)
 
@@ -495,9 +523,12 @@ def s_grandma(g, t, L, d):
         ws(g, "night")
         darken(g, 0.45)
         incense(g, CX, 900, t, lt > 1.0, 0.0, 3.0)
-        if lt < 1.4:
-            g.blob(CX + 120, 480, 60, 40, PETE.skin, 3, 2)
-            glow(g, CX + 60, 470, 60, (1, 0.7, 0.3, 1), 0.8 * (lt > 0.6))
+        if lt < 1.4:   # มือถือไฟแช็ก (มีแขนเสื้อต่อจากขอบจอ)
+            _stroke(g.c, [(W + 100, 760), (CX + 300, 560), (CX + 140, 500)], 90, PETE.suit, 1.0)
+            g.blob(CX + 120, 490, 60, 44, PETE.skin, 3, 2)
+            _rr(g.c, CX + 70, 440, 34, 70, 6)
+            _shade(g.c, hexc("#c84a3a"), 2, 0.2)
+            glow(g, CX + 86, 425, 60, (1, 0.7, 0.3, 1), 0.8 * (lt > 0.6))
 
     def e(g, t, lt):   # พีทไหว้ กระซิบ
         desk_scene(g, t, grandma_screen(0.0), "neutral", pose="hold", look=(1, -0.2))
@@ -516,8 +547,9 @@ def s_retouch(g, t, L, d):
             _rr(g.c, -500, -60, 1000, 300, 20)
             _shade(g.c, hexc("#2a2c30"), 3, 0.1)
             px = 200 * math.sin(t * 2.2)
-            g.blob(px - 60, 40, 130, 90, PETE.skin, 3, 2)
-            _stroke(g.c, [(px, 10), (px + 160, -150)], 16, hexc("#3a3a3a"), 1.0)
+            _stroke(g.c, [(px - 60, 40), (px - 200, 400)], 150, PETE.suit, 1.0)   # แขนเสื้อ
+            _stroke(g.c, [(px + 10, 10), (px + 120, -120)], 16, hexc("#3a3a3a"), 1.0)
+            g.blob(px - 40, 40, 120, 85, PETE.skin, 3, 2)
 
     def c_(g, t, lt):   # หน้าพีท แสงจอสะท้อน
         ws(g, "night")
@@ -677,14 +709,19 @@ def s_fon(g, t, L, d):
 
     def c_(g, t, lt):   # ยื่นกรอบรูป
         shop(g, "day", 1.2, CX, 600)
+        for sx in (-1, 1):   # แขนเสื้อจากขอบล่าง
+            _stroke(g.c, [(CX + sx * 230, 760), (CX + sx * 420, 1300)], 140, PETE.suit, 1.0)
         framed_grandma(g, CX, 560, 0.9, t)
         for sx in (-1, 1):
-            g.blob(CX + sx * 250, 760, 70, 50, PETE.skin, 3, sx)
+            hand_blob(g, CX + sx * 215, 740, PETE.skin, 1.6, sx * 90)
 
     def d_(g, t, lt):   # ร้องไห้โฮ
         shop(g, "day")
         person(g, 1150, 1180, FON, 0.85, mood="sad", pose="hold", turn=-0.3, seed=4)
-        framed_grandma(g, 1150, 760, 0.42, t)
+        hy = hand_xy(1150, 1180, FON, 0.85, "hold", 1)[1]
+        framed_grandma(g, 1150, hy - 90, 0.42, t)   # กรอบรูปในสองมือ
+        for sx in (-1, 1):
+            hand_blob(g, 1150 + sx * 100, hy - 20, FON.skin, 0.85, sx * 90)
         person(g, 560, 1220, PETE, 0.84, mood="worry", pose="down", turn=0.5, seed=1)
 
     def e(g, t, lt):   # ฝนพูด (ใกล้)
@@ -747,8 +784,8 @@ def s_envelope(g, t, L, d):
     def b(g, t, lt):   # ซองไถเข้ามาใต้ประตู
         shop(g, "night", 1.5, 1300, 900)
         darken(g, 0.5)
-        fill_rect(g.c, 300, 960, 1500, 14, (0.95, 0.85, 0.6, 0.8))
-        envelope(g, lerp(1300, 900, slide(lt, 0, 1, 1.2)), 1010, 1.0, 4)
+        fill_rect(g.c, 300, 800, 1500, 14, (0.95, 0.85, 0.6, 0.8))
+        envelope(g, lerp(1300, 900, slide(lt, 0, 1, 1.2)), 830, 1.0, 4)
 
     def c_(g, t, lt):   # เท้าลงบันได
         fill_rect(g.c, -800, -800, W + 1600, H + 1600, hexc("#1c1814"))
@@ -898,7 +935,7 @@ def s_reflection(g, t, L, d):
 
     def a(g, t, lt):   # แถบความคมชัด
         iris_k(g, t, lt, 1.8, 0.0, slide(lt, 0.2, 0.6))
-        with g.at(CX, 980):
+        with g.at(CX, 140):   # แถบความคมชัด (ด้านบน ไม่ทับซับ)
             _rr(g.c, -400, -14, 800, 28, 14)
             _shade(g.c, hexc("#c9c9c4"), 2, 0.1)
             g.circle(-400 + 800 * slide(lt, 0.2, 0.8, 3), 0, 26, WHITE, 3)
@@ -916,9 +953,10 @@ def s_reflection(g, t, L, d):
     def d_(g, t, lt):   # เงื้อท่อนเหล็ก (ค้างก่อนลงมือ)
         bg(g, "road", set_road_night)
         k = slide(lt, 0, 1, 1.5)
-        person(g, 900, 1150, KILLER, 0.95, mood="angry", pose="down", pose2="v", k=k, turn=-0.3, seed=6)
+        hx, hy = hand_xy(900, 1150, KILLER, 0.95, "down", 1, "raise1", k)
+        pipe(g, hx, hy + 40, 1.3, lerp(150, -12, k))   # ท่อนเหล็กกำในมือขวา
+        person(g, 900, 1150, KILLER, 0.95, mood="angry", pose="down", pose2="raise1", k=k, turn=-0.3, seed=6)
         vest(g, 900, 1150, 0.95)
-        pipe(g, 980, lerp(900, 320, k), 1.3, 20)
         darken(g, 0.25)
         vignette(g, 0.75)
 
@@ -980,8 +1018,8 @@ def s_news(g, t, L, d):
 
     def d_(g, t, lt):   # รูปประกอบข่าว เต็มจอ
         bg(g, "road", set_road_night)
-        _rr(g.c, 380, 760, 620, 90, 40)
-        _shade(g.c, WHITE, 3, 0.1)
+        g.poly([(380, 860), (430, 790), (560, 770), (700, 790), (860, 780), (1000, 810), (1020, 860)],
+               hexc("#e9e9e4"), 3, amp=0, smooth=True)   # ร่างคลุมผ้าขาวบนพื้นถนน
         person(g, 1350, 1100, KILLER, 0.8, mood="neutral", pose="down", turn=-0.4, seed=6)
         vest(g, 1350, 1100, 0.8)
 
@@ -1009,7 +1047,7 @@ def s_call(g, t, L, d):
         shoulders(g, PETE, 860, 620, 3.2)
         with g.at(860, 620, 3.2):
             head(g, PETE, mood, 0.0, 0.3, (0.4, 0), 1)
-        phone(g, 1130, 650, 0.9, 20, None, hand=True)
+        phone(g, 1095, 620, 0.62, 12, None, hand=True)   # โทรศัพท์แนบหู (ไม่บังหน้า)
 
     def killer_side(g, t):
         bg(g, "station", set_station)
@@ -1126,9 +1164,11 @@ def door_shake(g, t, k, light=1.0, shadow_feet=True):
 def s_bang(g, t, L, d):
     def a(g, t, lt):   # ลากโต๊ะดันประตู
         door_shake(g, t, 0.0, 0.0, False)
-        x = lerp(200, 700, slide(lt, 0, 1, 2.0))
-        person(g, x - 200, 1250, PETE, 0.8, mood="worry", pose="hold", turn=0.8, seed=1, lean=10)
-        desk(g, x + 200, 860, 500)
+        x = lerp(150, 520, slide(lt, 0, 1, 2.0))
+        person(g, x, 1250, PETE, 0.8, mood="worry", pose="push1", turn=0.8, seed=1, lean=8)
+        hx, _ = hand_xy(x, 1250, PETE, 0.8, "push1", 1)
+        hy = hand_xy(x, 1250, PETE, 0.8, "push1", 1)[1]
+        desk(g, hx + 250, hy - 10, 500)   # มือวางบนขอบโต๊ะที่ดัน
 
     def b(g, t, lt):   # ปัง ปัง ปัง
         k = max(0.0, math.sin(lt * 9)) ** 4
@@ -1173,11 +1213,19 @@ def s_crowbar(g, t, L, d):
 
     def c_(g, t, lt):   # ชะแลงงัดร่องประตู
         door_shake(g, t, 0.15, 1.0, True)
-        crowbar(g, 1225, 640 - 40 * math.sin(t * 6), 1.0, 8)
+        g.c.save()
+        g.c.rectangle(1180, 0, 200, 2000)   # โผล่มาแค่ปลายง่ามจากร่องประตู
+        g.c.clip()
+        crowbar(g, 1300, 700 - 30 * math.sin(t * 6), 1.0, -20)
+        g.c.restore()
 
     def d_(g, t, lt):
         door_shake(g, t, 0.4, 1.0, True)
-        crowbar(g, 1225, 620, 1.0, 14)
+        g.c.save()
+        g.c.rectangle(1180, 0, 200, 2000)
+        g.c.clip()
+        crowbar(g, 1290, 680, 1.0, -28)
+        g.c.restore()
         darken(g, 0.1)
 
     def e(g, t, lt):   # ประตูแตก
@@ -1209,7 +1257,9 @@ def s_knife(g, t, L, d):
     def b(g, t, lt):   # มีดสะท้อนแสงจอ
         ws(g, "night")
         darken(g, 0.6)
+        _stroke(g.c, [(CX + 60, 760), (W + 200, 1250)], 200, KILLER.suit, 1.0)   # แขนเสื้อ
         knife(g, CX, 640, 3.0, -30)
+        hand_blob(g, CX + 55, 725, KILLER.skin, 3.0, -30)   # กำด้ามมีด
         glow(g, CX + 40, 420, 120, (0.7, 0.9, 1.0, 1), 0.6)
 
     def c_(g, t, lt):   # พีทถอยชนกล้องโบราณ
@@ -1224,9 +1274,10 @@ def s_knife(g, t, L, d):
         ws(g, "night")
         darken(g, 0.35)
         k = slide(lt, 0, 1, 1.2)
-        person(g, 1200, 1350, KILLER, 1.15, mood="angry", pose="down", pose2="v", k=k, turn=-0.4, seed=6)
+        hx, hy = hand_xy(1200, 1350, KILLER, 1.15, "down", 1, "raise1", k)
+        knife(g, hx, hy - 30, 1.4, lerp(180, 0, k))   # ด้ามมีดอยู่ในกำมือ
+        person(g, 1200, 1350, KILLER, 1.15, mood="angry", pose="down", pose2="raise1", k=k, turn=-0.4, seed=6)
         vest(g, 1200, 1350, 1.15)
-        knife(g, 1200 + 240 * 1.15 * 0.0 + 260, lerp(980, 420, k), 1.4, 20)
         vignette(g, 0.7)
     run_shots(g, t, L, d, [a, b, c_, d_])
 
@@ -1298,7 +1349,7 @@ def s_fall(g, t, L, d):
         darken(g, 0.2)
         fill_rect(g.c, -800, -800, W + 1600, H + 1600, (1, 1, 0.95, max(0.0, 0.5 - lt * 0.2)))
         x = lerp(1100, 1450, slide(lt, 0, 1, 2.5))
-        person(g, x, 1300, KILLER, 1.0, mood="shout", pose="think", turn=-0.5, seed=6, lean=-8)
+        person(g, x, 1300, KILLER, 1.0, mood="shout", pose="cover", turn=-0.5, seed=6, lean=-8)
         vest(g, x, 1300, 1.0)
 
     def b(g, t, lt):   # ส้นเท้าพลาดขอบบันได
@@ -1332,9 +1383,24 @@ def s_fall(g, t, L, d):
         r = 0.5 + 0.5 * math.sin(t * 7)
         glow(g, 1600, 500, 900, (0.95, 0.2, 0.2, 1), 0.2 * r)
         glow(g, 300, 500, 900, (0.2, 0.35, 0.95, 1), 0.2 * (1 - r))
-        person(g, 1250, 900, KILLER, 0.55, mood="sad", pose="down", lean=-90, seed=6, shadow=False)
-        person(g, 1300, 1150, POLICE, 0.75, mood="firm", pose="hold", turn=-0.5, seed=8)
-        person(g, 500, 1150, POLICE, 0.75, mood="firm", pose="point", turn=0.5, seed=9)
+        # ภาพใกล้: ข้อมือไขว้หลังของคนร้ายถูกใส่กุญแจมือ มือตำรวจจับไว้
+        c = g.c
+        for k, (x0, rot) in enumerate(((700, 12), (1220, -12))):
+            with g.at(x0, 600, 1.0, rot):
+                _rr(c, -330, -70, 420, 140, 60)
+                _shade(c, KILLER.suit, 3, 0.3)
+                g.blob(150, 0, 90, 75, KILLER.skin, 3, k)
+        cuff_x = 960
+        for sx in (-1, 1):
+            c.new_path()
+            c.arc(cuff_x + sx * 120, 600, 70, 0, 2 * math.pi)
+            c.set_source_rgba(0.78, 0.8, 0.82, 1)
+            c.set_line_width(22)
+            c.stroke()
+        _stroke(c, [(cuff_x - 50, 600), (cuff_x, 620), (cuff_x + 50, 600)], 12, (0.7, 0.72, 0.75, 1), 1.0)
+        g.blob(1380, 420, 140, 100, POLICE.skin, 3, 4)   # มือตำรวจกดแขนไว้
+        _rr(c, 1440, 330, 500, 170, 60)
+        _shade(c, POLICE.suit, 3, 0.3)
 
     def h(g, t, lt):   # แฟลชไดรฟ์ = หลักฐาน
         shop(g, "night", 1.3)
@@ -1352,9 +1418,9 @@ def s_ending(g, t, L, d):
         glow(g, 1500, 200, 900, hexc("#fff2c9"), 0.35)
         with g.at(700, 760):
             bed(g, 0, 200, 1.1)
-            shoulders(g, MOTHER, -300, -40, 2.0)
-            with g.at(-300, -40, 2.0):
-                head(g, MOTHER, "smile", 0.0, 0.5, (0.6, 0), 3)
+            _rr(g.c, -470, -170, 340, 150, 50)   # หมอน
+            _shade(g.c, WHITE, 3, 0.2)
+            bed_patient(g, MOTHER, "smile", (0.6, 0))
         person(g, 1350, 1250, PETE, 0.85, mood="smile", pose="hold", turn=-0.7, seed=1)
 
     def b(g, t, lt):
@@ -1379,7 +1445,10 @@ def s_ending(g, t, L, d):
     def e(g, t, lt):   # เย็น ชั้นสอง โทรศัพท์ดัง
         ws(g, "dusk")
         glow(g, 1500, 300, 800, hexc("#f2a76a"), 0.3)
-        person(g, 640, 1180, PETE, 0.78, mood="neutral", pose="phone", turn=0.6, seed=1)
+        chair_back(g, 600, 1000, 0.8)
+        person(g, 640, 1243, PETE, 0.78, mood="neutral", pose="phone2", turn=0.6, seed=1, legs=False, shadow=False)
+        phone(g, 700, 610, 0.2, 15, None, hand=False)   # โทรศัพท์แนบหูด้านขวา
+        hand_blob(g, 712, 650, PETE.skin, 0.8, -30)
         desk(g, 1000, 880, 1300)
         crt(g, 1150, 880, 0.75, None)
 
@@ -1388,7 +1457,7 @@ def s_ending(g, t, L, d):
         shoulders(g, MUN, 960, 600, 3.2)
         with g.at(960, 600, 3.2):
             head(g, MUN, "worry", 0.6 * max(0, math.sin(t * 8)), 0.2, (0.3, 0), 2)
-        phone(g, 1260, 640, 0.8, 20, None, hand=False)
+        phone(g, 1195, 620, 0.62, 12, None, hand=True, skin=MUN.skin)
 
     def h(g, t, lt):   # เคสคอมเปิดข้าง ช่องฮาร์ดดิสก์ว่าง หยากไย่
         ws(g, "dusk")

@@ -873,3 +873,59 @@ def light_pass(g, lx, ly, col=(1.0, 0.86, 0.62), k=0.55, r=1300, dust=True):
             d = math.hypot(px - lx, py - ly) / (r * 0.5)
             if d < 1:
                 g.circle(px, py, 2 + 2.5 * u, (1, 0.95, 0.85, 0.35 * (1 - d)), 0)
+
+
+# ================================================================ ตำแหน่งมือจริงของท่าทาง (ให้ของที่ถืออยู่ในมือพอดี)
+def hand_xy(x, y, look, sc, pose, side=1, pose2=None, k=0.0, grip=22):
+    """พิกัดจอของมือ (side=-1 มือซ้ายจอ, +1 มือขวาจอ) — คำนวณแบบเดียวกับ people._arm"""
+    p1 = _people.POSES[pose]
+    p2 = _people.POSES[pose2] if pose2 else p1
+    kk = k if pose2 else 0.0
+    i = 0 if side < 0 else 1
+    ang = tuple(lerp(a, b, kk) for a, b in zip(p1[i], p2[i]))
+    a1, a2 = math.radians(ang[0]), math.radians(ang[1])
+    sh = (side * 112 * look.build, -705)
+    el = (sh[0] + side * math.sin(a1) * 150, sh[1] + math.cos(a1) * 150)
+    wr = (el[0] + side * math.sin(a2) * 140, el[1] + math.cos(a2) * 140)
+    d = (wr[0] - el[0], wr[1] - el[1])
+    n = math.hypot(*d) or 1
+    hx, hy = wr[0] + d[0] / n * grip, wr[1] + d[1] / n * grip
+    s = sc * look.height
+    return x + hx * s, y + hy * s
+
+
+# ท่าทางเพิ่มสำหรับตอนนี้ (มุมไหล่-ข้อศอก, มุมศอก-ข้อมือ)
+_people.POSES.update({
+    "raise1": ((6, 2), (155, 172), "open", "fist"),        # ยกแขนขวาสูงเหนือหัว กำของ
+    "present": ((24, -80), (24, -80), "fist", "fist"),     # สองมือถือของไว้หน้าอก
+    "push": ((70, 95), (70, 95), "palm", "palm"),          # สองมือดันไปข้างหน้า
+    "phone2": ((6, 2), (-48, -178), "open", "fist"),       # ถือโทรศัพท์แนบหู
+    "carry": ((14, -100), (14, -100), "fist", "fist"),     # อุ้ม/ถือกล่องระดับเอว
+})
+_people.POSES.update({
+    "push1": ((6, 2), (80, 95), "open", "palm"),           # มือขวาดันไปข้างหน้า (หันข้าง)
+    "wai": ((20, -118), (20, -118), "palm", "palm"),       # ไหว้ มือประนมหน้าอก
+    "reachL": ((60, 80), (6, 2), "palm", "open"),         # เอื้อมมือซ้ายไปข้างหน้าต่ำ ๆ
+    "cover": ((6, 2), (150, -94), "open", "palm"),         # ยกแขนบังตา (มือที่ระดับตา)
+})
+
+
+def hand_blob(g, x, y, skin, sc=1.0, rot=0):
+    """มือกำของ (ใช้วาดทับขอบของที่ถือ)"""
+    with g.at(x, y, sc, rot):
+        g.blob(0, 0, 26, 22, skin, 3, 5)
+        for k in range(3):
+            _rr(g.c, -22 + k * 15, -6, 13, 26, 6)
+            _shade(g.c, skin, 2, 0.2)
+
+
+def cane(g, hx, hy, floor_y, col=WOOD2):
+    c = g.c
+    _stroke(c, [(hx, hy - 10), (hx + 6, floor_y)], 12, col, 1.0)
+    _stroke(c, [(hx - 26, hy - 18), (hx, hy - 22)], 12, col, 1.0)
+
+
+def chair_back(g, x, y, sc=1.0):
+    with g.at(x, y, sc):
+        _rr(g.c, -110, -420, 220, 420, 30)
+        _shade(g.c, hexc("#3a2c22"), 3, 0.25)
