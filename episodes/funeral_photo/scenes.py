@@ -22,9 +22,9 @@ FLOOR = 1040
 SUB_COLOR = hexc("#ffffff")
 SUB_STROKE = (5, (0.05, 0.05, 0.06, 1))
 SUB_PHRASES = True
-SUB_SIZE = 50
-SUB_TOP = 990          # ซับอยู่ในแถบดำล่างแบบภาพยนตร์
-BAR = 104              # แถบดำบน/ล่าง (สัดส่วนภาพ ~2.2:1)
+SUB_SIZE = 54
+SUB_TOP = 940          # ซับล่างจอ (วาดทับทุกอย่าง ไม่มีอะไรบัง)
+BAR = 0                # ไม่ใช้แถบดำบน/ล่าง
 CHANNEL = "โกสป่ะ"     # ชื่อช่อง มุมซ้ายบน
 AMBIENCE = {"rain": 0.025, "drone": 0.12}   # โทนห้องเงียบ ๆ + เสียงต่ำ ใต้เสียงพากย์
 
@@ -321,7 +321,8 @@ def s_mother(g, t, L, d):
         shoulders(g, PETE, 500, 640, 1.9)
         with g.at(500, 640, 1.9):
             head(g, PETE, "worry", 0.0, 0.4, (0.3, -0.6), 1)
-        g.blob(1000, 720, 520, 110, hexc("#6a7a8e"), 3, 2)
+        _rr(g.c, 330, 700, 1180, 260, 60)   # ผ้าห่มคลุมถึงคาง
+        _shade(g.c, hexc("#6a7a8e"), 3, 0.25)
         vignette(g, 0.6)
     run_shots(g, t, L, d, [a, b, c_, d_, e])
 
@@ -1457,9 +1458,8 @@ def POST(g, t):
     c.paint_with_alpha(0.07)
     c.restore()
     vignette(g, 0.35)
-    fill_rect(c, 0, 0, W, BAR, (0, 0, 0, 1))
-    fill_rect(c, 0, H - BAR, W, BAR, (0, 0, 0, 1))
-    g.text(CHANNEL, 56, BAR / 2, 42, "kanitsb", (1, 1, 1, 1), a=0.85, anchor="l")   # ชื่อช่องมุมซ้ายบน
+    g.text(CHANNEL, 56, 58, 42, "kanitsb", (1, 1, 1, 1), a=0.9, anchor="l", stroke=5,
+           stroke_color=(0.05, 0.05, 0.06, 1))   # ชื่อช่องมุมซ้ายบน
 
 
 SCENES = {n: globals()["s_" + n] for n in _names}
