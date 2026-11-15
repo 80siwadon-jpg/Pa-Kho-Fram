@@ -12,6 +12,8 @@
 #   feitangyuan/onetake                     PolyForm Noncommercial 1.0 — ใช้ได้เฉพาะงานไม่แสวงกำไร
 #   alchaincyf/huashu-art-motion, alchaincyf/huashu-motion, Leonxlnx/earshot, NiazMorshed2007/reanimate,
 #   rossark0/rossark-motion-skill, win4r/video-director, talsiach/take-one, shreyaskarnik/argo   MIT
+#   Barty-Bart/motion-graphics, charlie947/motion-graphics-skills                                  MIT
+#   mattypark/Motion-graphics-skill   ไม่มีไฟล์ใบอนุญาต (สงวนสิทธิ์โดยปริยาย) — ติดตั้งใช้ส่วนตัวเท่านั้น ห้ามแจกจ่ายต่อ
 set -euo pipefail
 REPOS="${SKILL_REPOS:-$HOME/.claude/skill-repos}"
 DEST="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
@@ -40,7 +42,8 @@ link() {    # folder-that-has-SKILL.md  skill-name
 for r in artemnovitckii/claude-animation-skills diffusionstudio/lottie feitangyuan/onetake \
          vincentsch/explainroo lemomo-ai/lemo-opuscar \
          alchaincyf/huashu-art-motion alchaincyf/huashu-motion Leonxlnx/earshot NiazMorshed2007/reanimate \
-         rossark0/rossark-motion-skill win4r/video-director talsiach/take-one shreyaskarnik/argo; do
+         rossark0/rossark-motion-skill win4r/video-director talsiach/take-one shreyaskarnik/argo \
+         Barty-Bart/motion-graphics mattypark/Motion-graphics-skill charlie947/motion-graphics-skills; do
   fetch "$r"
 done
 
@@ -60,3 +63,8 @@ link "$REPOS/rossark0/rossark-motion-skill" rossark-motion-skill
 link "$REPOS/win4r/video-director/video-director" video-director
 link "$REPOS/talsiach/take-one" take-one
 link "$REPOS/shreyaskarnik/argo/skills/argo-guide" argo-guide
+for base in Barty-Bart/motion-graphics mattypark/Motion-graphics-skill charlie947/motion-graphics-skills; do
+  for d in "$REPOS/$base"/skills/*/; do
+    link "${d%/}" "$(basename "$d")"
+  done
+done
