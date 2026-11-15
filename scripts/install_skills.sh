@@ -10,6 +10,8 @@
 #   vincentsch/explainroo                   MIT
 #   lemomo-ai/lemo-opuscar                  โค้ด MIT, เอกสาร/SKILL.md CC BY-NC 4.0, หนังที่สร้างเป็นของผู้ใช้ (ใช้เชิงพาณิชย์ได้)
 #   feitangyuan/onetake                     PolyForm Noncommercial 1.0 — ใช้ได้เฉพาะงานไม่แสวงกำไร
+#   alchaincyf/huashu-art-motion, alchaincyf/huashu-motion, Leonxlnx/earshot, NiazMorshed2007/reanimate,
+#   rossark0/rossark-motion-skill, win4r/video-director, talsiach/take-one, shreyaskarnik/argo   MIT
 set -euo pipefail
 REPOS="${SKILL_REPOS:-$HOME/.claude/skill-repos}"
 DEST="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
@@ -36,7 +38,9 @@ link() {    # folder-that-has-SKILL.md  skill-name
 }
 
 for r in artemnovitckii/claude-animation-skills diffusionstudio/lottie feitangyuan/onetake \
-         vincentsch/explainroo lemomo-ai/lemo-opuscar; do
+         vincentsch/explainroo lemomo-ai/lemo-opuscar \
+         alchaincyf/huashu-art-motion alchaincyf/huashu-motion Leonxlnx/earshot NiazMorshed2007/reanimate \
+         rossark0/rossark-motion-skill win4r/video-director talsiach/take-one shreyaskarnik/argo; do
   fetch "$r"
 done
 
@@ -47,3 +51,12 @@ link "$REPOS/diffusionstudio/lottie/skills/text-to-lottie" text-to-lottie
 link "$REPOS/feitangyuan/onetake" onetake
 link "$REPOS/vincentsch/explainroo/skills/explainroo" explainroo
 link "$REPOS/lemomo-ai/lemo-opuscar/plugin/skills/lemo-opuscar" lemo-opuscar
+link "$REPOS/alchaincyf/huashu-art-motion" huashu-art-motion
+link "$REPOS/alchaincyf/huashu-motion/skills/huashu-motion" huashu-motion
+link "$REPOS/Leonxlnx/earshot/skills/earshot" earshot
+link "$REPOS/Leonxlnx/earshot/skills/real-sound" real-sound
+link "$REPOS/NiazMorshed2007/reanimate/skills/reanimate" reanimate
+link "$REPOS/rossark0/rossark-motion-skill" rossark-motion-skill
+link "$REPOS/win4r/video-director/video-director" video-director
+link "$REPOS/talsiach/take-one" take-one
+link "$REPOS/shreyaskarnik/argo/skills/argo-guide" argo-guide
