@@ -235,8 +235,15 @@ def render_chunk(args):
 def mux(video, out):
     """รวมภาพ + เสียงพากย์ (+ เสียงบรรยากาศถ้าตอนนั้นตั้ง AMBIENCE) -> mp4 ความดัง -14 LUFS"""
     narr = os.path.join(BUILD, "narration.wav")
+    sfx = os.path.join(BUILD, "sfx.wav")   # เสียงประกอบของตอน (ถ้ามี) วางตามเวลาแล้ว
     src = ["-f", "concat", "-safe", "0", "-i", video] if video.endswith(".txt") else ["-i", video]
     cmd = ["ffmpeg", "-y", "-loglevel", "error", *src, "-i", narr]
+    use_sfx = os.path.exists(sfx)
+    if use_sfx:
+        cmd += ["-i", sfx]
+    sfx_in = "[2:a]aresample=48000[s];" if use_sfx else ""
+    sfx_mix = "[s]" if use_sfx else ""
+    nmix = 3 + (1 if use_sfx else 0)
     if AMBIENCE:
         d = TL["duration"]
         rain, drone = AMBIENCE.get("rain", 0.06), AMBIENCE.get("drone", 0.12)
@@ -244,11 +251,15 @@ def mux(video, out):
               f"volume='{rain}*(0.85+0.15*sin(t*0.37))':eval=frame[rain];"
               f"sine=f=55:d={d}:r=48000[s1];sine=f=82.4:d={d}:r=48000[s2];"
               f"[s1][s2]amix=inputs=2,tremolo=f=0.12:d=0.6,lowpass=f=180,volume={drone}[drone];"
-              f"[1:a]aresample=48000[v];[v][rain][drone]amix=inputs=3:normalize=0:duration=first,"
+              f"[1:a]aresample=48000[v];{sfx_in}[v][rain][drone]{sfx_mix}amix=inputs={nmix}:normalize=0:duration=first,"
               f"loudnorm=I=-14:TP=-1.5:LRA=11[a]")
         cmd += ["-filter_complex", fc, "-map", "0:v", "-map", "[a]"]
     else:
-        cmd += ["-map", "0:v", "-map", "1:a", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11"]
+        if use_sfx:
+            cmd += ["-filter_complex", f"[1:a]aresample=48000[v];{sfx_in}[v][s]amix=inputs=2:normalize=0:duration=first,"
+                    "loudnorm=I=-14:TP=-1.5:LRA=11[a]", "-map", "0:v", "-map", "[a]"]
+        else:
+            cmd += ["-map", "0:v", "-map", "1:a", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11"]
     cmd += ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-shortest", "-movflags", "+faststart", out]
     subprocess.run(cmd, check=True)
 

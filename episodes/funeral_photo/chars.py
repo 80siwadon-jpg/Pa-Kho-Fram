@@ -332,8 +332,9 @@ def incense(g, x, y, t, lit=True, burn=0.0, sc=1.0):
         _shade(c, hexc("#b59a5a"), 3, 0.25)
         top = -40 - 140 * (1 - burn)
         _stroke(c, [(0, -40), (0, top)], 5, hexc("#9a3a2a"), 1.0)
-        if lit:
-            glow(g, 0, top, 14, (1, 0.55, 0.25, 1), 0.9)
+        if lit:   # ถ่านธูปวูบวาบสองจังหวะ (ไม่สุ่มต่อเฟรม)
+            fl = 0.75 + 0.15 * math.sin(g.t * 2 * math.pi / 0.7) + 0.1 * math.sin(g.t * 2 * math.pi / 1.1 + 1.3)
+            glow(g, 0, top, 14 * (0.9 + 0.2 * fl), (1, 0.55, 0.25, 1), fl)
             smoke(g, 0, top - 6, t, 4, 0.25, 3, 40)
 
 
@@ -633,7 +634,67 @@ def _fill_grad(c, col, dark=0.82):
     c.fill()
 
 
+def _ease(x):
+    x = min(max(x, 0.0), 1.0)
+    return 4 * x ** 3 if x < 0.5 else 1 - (-2 * x + 2) ** 3 / 2
+
+
+def _ease_out(x):
+    x = min(max(x, 0.0), 1.0)
+    return 1 - (1 - x) ** 3
+
+
+def lid_amount(t, seed):
+    """เปลือกตา 0 (ลืม) .. 1 (ปิด): กะพริบทุก 3-4 วิ ปิด ~110 ms ค้าง 40 ms ลืม ~190 ms (ลืมช้ากว่าปิด)
+    นาน ๆ ทีกะพริบสองครั้งติด"""
+    per = 3.3 + 0.8 * (hn(seed, 11) * 0.5 + 0.5)
+    k = int((t + seed * 0.53) / per)
+    u = (t + seed * 0.53) - k * per
+
+    def one(u0):
+        d = u - u0
+        if d < 0 or d > 0.34:
+            return 0.0
+        if d < 0.11:
+            return _ease(d / 0.11)
+        if d < 0.15:
+            return 1.0
+        return 1 - _ease_out((d - 0.15) / 0.19)
+    v = one(0.0)
+    if hn(seed, k, 5) > 0.55:   # กะพริบสองครั้ง
+        v = max(v, one(0.42))
+    return v
+
+
+def gaze(t, seed):
+    """ตาเหลือบนิ่ม ๆ: เปลี่ยนจุดมองทุก ~2.6 วิ เลื่อนไป 0.5 วิ (ease-in-out) แล้วค้าง"""
+    per = 2.6 + 0.6 * (hn(seed, 21) * 0.5 + 0.5)
+    k = int((t + seed) / per)
+    u = (t + seed) - k * per
+
+    def target(i):
+        return 0.22 * hn(seed, i, 1), 0.12 * hn(seed, i, 2)
+    a, b = target(k - 1), target(k)
+    f = _ease(u / 0.5)
+    return a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f
+
+
 def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw=4.5):
+    """หัวมีชีวิต: เอียงหัวเบา ๆ รอบคอ (±2°) + ตาเหลือบ + กะพริบแบบนุ่ม (rossark-motion-skill)"""
+    t = g.t
+    tilt = 2.2 * math.sin(2 * math.pi * t / 4.6 + seed * 1.7)
+    gx, gy = gaze(t, seed) if mood not in ("shock", "shout") else (0.0, 0.0)
+    c = g.c
+    c.save()
+    c.translate(0, 70)
+    c.rotate(math.radians(tilt))
+    c.translate(0, -70)
+    _flat_head(g, look, mood, talk, turn, (look_at[0] + gx, look_at[1] + gy), seed, lw,
+               0.0 if mood in ("shock", "shout") else lid_amount(t, seed))
+    c.restore()
+
+
+def _flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw=4.5, lid=0.0):
     """หัวที่จุดกำเนิด = กลางหน้า (ระดับตา ~ -8) — อินเทอร์เฟซเดียวกับ people.head"""
     c, t, w = g.c, g.t, look.w * 0.98
     fx = turn * w * 0.32
@@ -705,7 +766,7 @@ def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=
             _stroke(c, [(sx * w * 0.5 + fx, 10), (sx * w * 0.36 + fx, 16), (sx * w * 0.22 + fx, 12)], 2, line, 0.55)
             _stroke(c, [(sx * w * 0.26 + fx, 40), (sx * w * 0.32 + fx, 62)], 2, line, 0.5)
     # ตาโต
-    blink = mood not in ("shock", "shout") and ((t * 0.45 + seed * 0.37) % 3.6) < 0.1
+    blink = lid > 0.97
     ey = -4
     sad = mood in ("sad", "worry")
     for sx in (-1, 1):
@@ -737,13 +798,18 @@ def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=
         g.circle(ix, iy, ir * 0.48, hexc("#0e0906"), 0)
         g.circle(ix - ir * 0.36, iy - ir * 0.38, ir * 0.3, (1, 1, 1, 0.95), 0)
         g.circle(ix + ir * 0.34, iy + ir * 0.3, ir * 0.13, (1, 1, 1, 0.8), 0)
+        if lid > 0.01:   # เปลือกตาบนเลื่อนลง ล่างขึ้น ~15% (ปิดกลางตา)
+            top = ey - eh - 4 + (2 * eh + 8) * 0.85 * lid
+            fill_rect(c, ex - ew - 6, ey - eh - 8, 2 * ew + 12, top - (ey - eh - 8), _darker(skin, 0.93))
+            fill_rect(c, ex - ew - 6, ey + eh + 4 - (2 * eh) * 0.15 * lid, 2 * ew + 12, eh, _darker(skin, 0.93))
         shade = cairo.LinearGradient(0, ey - eh, 0, ey)   # เงาเปลือกตาบนทับลูกตา
         shade.add_color_stop_rgba(0, 0.2, 0.1, 0.08, 0.35)
         shade.add_color_stop_rgba(1, 0.2, 0.1, 0.08, 0.0)
         c.set_source(shade)
         c.paint()
         c.restore()
-        _stroke(c, [(ex - ew * 1.08, ey + 2), (ex - ew * 0.3, ey - eh * 1.05), (ex + ew * 0.5, ey - eh * 1.02), (ex + ew * 1.1, ey - 1)],
+        ld = (2 * eh + 4) * 0.85 * lid   # ขนตาบนเลื่อนตามเปลือกตา
+        _stroke(c, [(ex - ew * 1.08, ey + 2), (ex - ew * 0.3, ey - eh * 1.05 + ld), (ex + ew * 0.5, ey - eh * 1.02 + ld), (ex + ew * 1.1, ey - 1)],
                 4, hexc("#21160f"), 1.0)
         _stroke(c, [(ex - ew * 0.7, ey + eh * 0.95), (ex + ew * 0.6, ey + eh * 0.92)], 1.8, line, 0.45)
         if sad or look.age > 0.55:
