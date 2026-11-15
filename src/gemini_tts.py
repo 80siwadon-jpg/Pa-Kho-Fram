@@ -185,7 +185,8 @@ def main():
         # WHISPER=<โฟลเดอร์ sherpa-onnx-whisper-small> = ขยับจุดตัดบรรทัดให้ตรงคำพูดจริง (บทที่มีจังหวะหยุดกลางบรรทัด)
         wdir = os.environ.get("WHISPER")
         ref = voice.WhisperRefiner(wdir, [d for _, _, d in chunk], span=int(os.environ.get("WHISPER_SPAN", 4))) if wdir else None
-        lines += voice.split_lines(x, runs, [voice.weight(t) for t in plain], keep_gap=0.08, refine=ref)
+        labs = voice.whisper_labels(x, runs, [d for _, _, d in chunk], ref) if ref else None   # ถอดเสียงจัดตำแหน่งเทียบบท
+        lines += voice.split_lines(x, runs, [voice.weight(t) for t in plain], keep_gap=0.08, refine=ref, labels=labs)
     for (_, disp), y in zip(items, lines):
         print(f"  {len(y) / timeline.SR:4.1f}s  {disp}")
     timeline.build([(s, d, y) for (s, d), y in zip(items, lines)], a.out, a.gap, a.gap + 0.12)
