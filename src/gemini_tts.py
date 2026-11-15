@@ -41,6 +41,16 @@ PAUSE = "\n[short pause]\n"
 MAX_CHARS = int(os.environ.get("TTS_MAX_CHARS", 1400))   # บางโมเดล (3.1-preview) รับก้อนยาวไม่ได้ -> ลดลง
 
 
+STRICT = ("IMPORTANT: Start reading the transcript immediately. Read ONLY the transcript below, word for word, "
+          "in order, exactly once. Do not add any introduction, commentary or extra words.\n")
+
+
+def expected_seconds(text):
+    """ความยาวเสียงโดยประมาณของบท (ไทย ~0.09 วิ/ตัวอักษร + ช่วงหยุดระหว่างบรรทัด)"""
+    body = re.sub(r"\[[^\]]*\]", "", text)
+    return len(body.replace(" ", "")) * 0.09 + body.count("\n") * 0.4
+
+
 class QuotaError(Exception):
     pass
 
@@ -105,6 +115,15 @@ def speak(text, models, voice_name, key, cache):
             cand = r["candidates"][0]
             if "content" in cand:
                 pcm = base64.b64decode(cand["content"]["parts"][0]["inlineData"]["data"])
+                dur, exp = len(pcm) / 2 / SR_IN, expected_seconds(text)
+                if dur > exp * 2.2 + 8 and attempt == 0:
+                    # โมเดลพูดเกินบท (ด้นเนื้อหาเอง/อ่านซ้ำ) -> ขอใหม่ครั้งเดียวด้วยคำสั่งให้อ่านตามบทคำต่อคำ
+                    print(f"  {model} ให้เสียงยาวผิดปกติ {dur:.0f}s (ควรราว {exp:.0f}s) ขอใหม่แบบอ่านตามบทเท่านั้น")
+                    body["contents"][0]["parts"][0]["text"] = PROMPT.replace("#### TRANSCRIPT", STRICT + "#### TRANSCRIPT").format(text=text)
+                    pcm = None
+                    continue
+                if dur > exp * 2.2 + 8:
+                    print(f"  คำเตือน: เสียงยังยาวผิดปกติ {dur:.0f}s (ควรราว {exp:.0f}s) ตรวจด้วย check_sync")
                 break
             print(f"  {model} ไม่ส่งเสียงกลับ ({cand.get('finishReason')}) ลองใหม่")
         if pcm is None:
@@ -185,7 +204,14 @@ def main():
         # WHISPER=<โฟลเดอร์ sherpa-onnx-whisper-small> = ขยับจุดตัดบรรทัดให้ตรงคำพูดจริง (บทที่มีจังหวะหยุดกลางบรรทัด)
         wdir = os.environ.get("WHISPER")
         ref = voice.WhisperRefiner(wdir, [d for _, _, d in chunk], span=int(os.environ.get("WHISPER_SPAN", 4))) if wdir else None
-        labs = voice.whisper_labels(x, runs, [d for _, _, d in chunk], ref) if ref else None   # ถอดเสียงจัดตำแหน่งเทียบบท
+        labs = None
+        if ref:   # ถอดเสียงจัดตำแหน่งเทียบบท (แคชผลไว้ ไม่ต้องถอดซ้ำทุกครั้ง)
+            lk = os.path.join(cache, os.path.basename(path)[:-4] + f"_labels_{a.tempo}.json")
+            if os.path.exists(lk):
+                labs = json.load(open(lk))
+            if not labs or len(labs) != len(runs):
+                labs = voice.whisper_labels(x, runs, [d for _, _, d in chunk], ref)
+                json.dump(labs, open(lk, "w"))
         lines += voice.split_lines(x, runs, [voice.weight(t) for t in plain], keep_gap=0.08, refine=ref, labels=labs)
     for (_, disp), y in zip(items, lines):
         print(f"  {len(y) / timeline.SR:4.1f}s  {disp}")
