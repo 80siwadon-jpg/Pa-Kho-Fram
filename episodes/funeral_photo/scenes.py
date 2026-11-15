@@ -3,6 +3,9 @@ import math
 import os
 import sys
 
+import cairo
+import numpy as np
+
 sys.path.insert(0, os.path.dirname(__file__))
 from chars import (BG, CREAM, FON, GOLD, GRANDMA_BW, HOSP, KENG, KILLER, LAMP, MOTHER, MUN, NIGHT, ORANGE,  # noqa: E402
                    PETE, POLICE, SCREEN, WOOD, WOOD2, WOOD3, banknote, big_eye, blurred, camera_antique,
@@ -19,7 +22,9 @@ FLOOR = 1040
 SUB_COLOR = hexc("#ffffff")
 SUB_STROKE = (5, (0.05, 0.05, 0.06, 1))
 SUB_PHRASES = True
-SUB_SIZE = 58
+SUB_SIZE = 50
+SUB_TOP = 990          # ซับอยู่ในแถบดำล่างแบบภาพยนตร์
+BAR = 104              # แถบดำบน/ล่าง (สัดส่วนภาพ ~2.2:1)
 AMBIENCE = {"rain": 0.025, "drone": 0.12}   # โทนห้องเงียบ ๆ + เสียงต่ำ ใต้เสียงพากย์
 
 CAMERA = {}
@@ -31,7 +36,7 @@ _names = ["hook", "pete", "mother", "mun", "rules", "night1", "grandma", "retouc
 for _i, _n in enumerate(_names):
     CAMERA[_n] = ("push_in", "pan_right", "pull_out", "pan_left")[_i % 4]
     TRANSITIONS[_n] = "fade"
-CAMERA.update({"five": "push_in", "pupil": "push_in", "zoom": "push_in", "reflection": "push_in", "bang": "dutch",
+CAMERA.update({"call": "dutch", "fall": "dutch", "flash": "push_in", "five": "push_in", "pupil": "push_in", "zoom": "push_in", "reflection": "push_in", "bang": "dutch",
                "crowbar": "dutch", "knife": "dutch"})
 TRANSITIONS.update({"pete": "zoom", "night1": "zoom", "envelope": "zoom", "night3": "zoom"})
 
@@ -64,6 +69,7 @@ def run_shots(g, t, L, d, shots):
     fn(g, t, max(t - t0, 0.0))
     lx, ly, col, k = g.light or (CX, -200, (0.95, 0.92, 0.86), 0.35)
     light_pass(g, lx, ly, col, k)
+    lens_fx(g, t, lx, ly, col, k, i + len(L) * 7)
 
 
 LIGHTS = {   # แหล่งแสงหลักของแต่ละฉาก (x, y, สี, ความแรง)
@@ -78,15 +84,57 @@ LIGHTS = {   # แหล่งแสงหลักของแต่ละฉ�
 }
 
 
+def lens_fx(g, t, lx, ly, col, k, seed):
+    """โบเก้จากแหล่งแสง + วัตถุโฟร์กราวด์หลุดโฟกัส (เหมือนเลนส์จริง)"""
+    c = g.c
+    c.save()
+    c.set_operator(cairo.OPERATOR_SCREEN)
+    for i in range(5):
+        bx = lx + 520 * hn(seed, i, 1) + 40 * math.sin(t * 0.3 + i)
+        by = ly + 300 * hn(seed, i, 2)
+        r = 40 + 50 * abs(hn(seed, i, 3))
+        rg = cairo.RadialGradient(bx, by, r * 0.6, bx, by, r)
+        rg.add_color_stop_rgba(0, col[0], col[1], col[2], 0.07 * k)
+        rg.add_color_stop_rgba(1, col[0], col[1], col[2], 0.0)
+        c.set_source(rg)
+        c.arc(bx, by, r, 0, 2 * math.pi)
+        c.fill()
+    c.restore()
+    if seed % 3 == 0:   # ขอบวัตถุหลุดโฟกัสที่มุมล่าง
+        side = -1 if seed % 2 else 1
+        x = CX + side * 1050
+        rg = cairo.RadialGradient(x, 1150, 60, x, 1150, 420)
+        rg.add_color_stop_rgba(0, 0.03, 0.025, 0.02, 0.85)
+        rg.add_color_stop_rgba(1, 0.03, 0.025, 0.02, 0.0)
+        c.set_source(rg)
+        c.arc(x, 1150, 420, 0, 2 * math.pi)
+        c.fill()
+
+
+def ots(g, look, x=360, y=1000, sc=1.0):
+    x, y, sc = (x - 120 if x < CX else x + 120), y + 160, sc * 1.6
+    """หัว+ไหล่ด้านหลังของตัวละครหลุดโฟกัสที่โฟร์กราวด์ (มุม over-the-shoulder)"""
+    c = g.c
+    for cx_, cy_, r, col in ((x, y + 330 * sc, 430 * sc, look.suit), (x + 20 * sc, y, 175 * sc, look.hair_col)):
+        rg = cairo.RadialGradient(cx_, cy_, r * 0.55, cx_, cy_, r)
+        dc = (col[0] * 0.45, col[1] * 0.45, col[2] * 0.45)
+        rg.add_color_stop_rgba(0, *dc, 1.0)
+        rg.add_color_stop_rgba(1, *dc, 0.0)
+        c.set_source(rg)
+        c.arc(cx_, cy_, r, 0, 2 * math.pi)
+        c.fill()
+
+
 def bg(g, key, fn, zoom=1.0, fx=CX, fy=CY, radius=7):
     """ฉากหลังเบลอ ซูมเข้าหา (fx, fy) ได้ (ช็อตใกล้จากฉากเดียวกัน) + ตั้งแหล่งแสงของฉาก"""
     if key in LIGHTS:
         lx, ly, col, k = LIGHTS[key]
         g.light = (CX + (lx - fx) * zoom, CY + (ly - fy) * zoom, col, k)
-    if zoom == 1.0:
-        blurred(g, key, fn, radius)
-        return
-    with g.at(CX, CY, zoom):
+    cam = getattr(g, "cam", None)
+    pz, pdx, pdy = 1.0, 0.0, 0.0
+    if cam:   # parallax: ฉากหลังขยับน้อยกว่าตัวละครเมื่อกล้องเคลื่อน
+        pz, pdx, pdy = (1.0 / max(cam[0], 0.5)) ** 0.45, -cam[1] * 0.45, -cam[2] * 0.45
+    with g.at(CX + pdx, CY + pdy, pz * zoom):
         with g.at(-fx, -fy):
             blurred(g, key, fn, radius)
 
@@ -139,7 +187,8 @@ def monitor_close(g, t, screen, sc=2.1, dy=0):
     """ช็อตใกล้หน้าจอ"""
     ws(g, "night")
     darken(g, 0.35)
-    crt(g, CX, 1020 + 260 * (sc - 2.1) + dy, sc, screen)
+    crt(g, CX + 120, 1020 + 260 * (sc - 2.1) + dy, sc, screen)
+    ots(g, PETE, 230, 860, 1.0)
 
 
 # ================================================================ 1 hook
@@ -331,9 +380,10 @@ def fingers(g, x, y, n, sc=1.0, skin=None):
 def s_rules(g, t, L, d):
     def a(g, t, lt):
         shop(g, "day", 1.3, 900, 500)
-        shoulders(g, MUN, 860, 600, 3.2)
-        with g.at(860, 600, 3.2):
-            head(g, MUN, "firm", 0.6 * max(0, math.sin(t * 8)), 0.2, (0.3, 0), 2)
+        shoulders(g, MUN, 1060, 600, 3.2)
+        with g.at(1060, 600, 3.2):
+            head(g, MUN, "firm", 0.6 * max(0, math.sin(t * 8)), -0.3, (-0.4, 0), 2)
+        ots(g, PETE, 300, 820, 1.1)
 
     def b(g, t, lt):   # ข้อหนึ่ง: นิ้วหนึ่ง + ธูป
         shop(g, "day", 1.6, 600, 700)
@@ -638,11 +688,12 @@ def s_fon(g, t, L, d):
     def e(g, t, lt):   # ฝนพูด (ใกล้)
         shop(g, "day", 1.5, 1200, 500)
         shoulders(g, FON, 900, 620, 3.0)
-        with g.at(900, 620, 3.0):
-            head(g, FON, "sad", 0.5 * max(0, math.sin(t * 7)), -0.3, (0.3, 0.2), 4)
+        with g.at(1050, 620, 3.0):
+            head(g, FON, "sad", 0.5 * max(0, math.sin(t * 7)), -0.3, (-0.3, 0.2), 4)
             for k in range(2):
                 y = (t * 40 + k * 30) % 60
                 g.blob(-24, 10 + y, 5, 8, (0.7, 0.85, 0.95, 0.8), 0, k)
+        ots(g, PETE, 300, 840, 1.1)
 
     def f(g, t, lt):   # รูปเปียกน้ำท่วม (ภาพย้อน)
         fill_rect(g.c, -800, -800, W + 1600, H + 1600, hexc("#5a6a72"))
@@ -1370,6 +1421,43 @@ def s_ending(g, t, L, d):
             darken(g, min((lt - te) / 0.3, 1.0), (0, 0, 0))
             g.text("รับจ้างซ่อมรูปถ่ายหน้าศพ", CX, CY, 84, "kanit", hexc("#e9e4d6"), pop(lt, te + 0.5, 0.5))
     run_shots(g, t, L, d, [a, b, c_, d_, e, f, h, i_, j])
+
+
+_GRAIN = []
+
+
+def POST(g, t):
+    """เกรดสีแบบภาพยนตร์ (เงาเขียวอมฟ้า ไฮไลต์อุ่น) + เกรนฟิล์ม + วิกเน็ตต์ + แถบดำ"""
+    c = g.c
+    c.save()
+    c.set_operator(cairo.OPERATOR_SOFT_LIGHT)
+    lg = cairo.LinearGradient(0, 0, 0, H)
+    lg.add_color_stop_rgba(0, 0.22, 0.42, 0.5, 0.35)
+    lg.add_color_stop_rgba(1, 0.2, 0.36, 0.42, 0.45)
+    c.set_source(lg)
+    c.paint()
+    c.set_operator(cairo.OPERATOR_SOFT_LIGHT)   # เพิ่มคอนทราสต์เล็กน้อย
+    c.set_source_rgba(0.5, 0.45, 0.4, 0.25)
+    c.paint()
+    if not _GRAIN:
+        rnd = np.random.default_rng(7)
+        a = (rnd.random((360, 640)) * 255).astype(np.uint8)
+        arr = np.dstack([a, a, a, np.full_like(a, 255)]).copy()
+        surf = cairo.ImageSurface.create_for_data(memoryview(arr), cairo.FORMAT_ARGB32, 640, 360, 640 * 4)
+        _GRAIN.extend([surf, arr])
+    surf = _GRAIN[0]
+    f = int(t * 24)
+    c.set_operator(cairo.OPERATOR_OVERLAY)
+    c.translate(-hn(f, 1) * 300 - 300, -hn(f, 2) * 200 - 200)
+    c.scale(3, 3)
+    pat = cairo.SurfacePattern(surf)
+    pat.set_extend(cairo.EXTEND_REPEAT)
+    c.set_source(pat)
+    c.paint_with_alpha(0.07)
+    c.restore()
+    vignette(g, 0.35)
+    fill_rect(c, 0, 0, W, BAR, (0, 0, 0, 1))
+    fill_rect(c, 0, H - BAR, W, BAR, (0, 0, 0, 1))
 
 
 SCENES = {n: globals()["s_" + n] for n in _names}

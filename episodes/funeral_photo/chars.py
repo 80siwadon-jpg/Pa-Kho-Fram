@@ -635,7 +635,7 @@ def _fill_grad(c, col, dark=0.82):
 
 def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=0, lw=4.5):
     """หัวที่จุดกำเนิด = กลางหน้า (ระดับตา ~ -8) — อินเทอร์เฟซเดียวกับ people.head"""
-    c, t, w = g.c, g.t, look.w * 1.1
+    c, t, w = g.c, g.t, look.w * 0.98
     fx = turn * w * 0.32
     hair = look.hair_col
     skin = look.skin
@@ -728,8 +728,9 @@ def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=
         ix, iy = ex + look_at[0] * ew * 0.3, ey + 2 + look_at[1] * eh * 0.25
         ir = eh * 0.86
         ig = cairo.RadialGradient(ix, iy + ir * 0.4, ir * 0.1, ix, iy, ir)
-        ig.add_color_stop_rgba(0, 0.62, 0.42, 0.26, 1)
-        ig.add_color_stop_rgba(1, 0.2, 0.12, 0.08, 1)
+        bw = abs(skin[0] - skin[2]) < 0.03   # รูปขาวดำ -> ตาเทา
+        ig.add_color_stop_rgba(0, *((0.6, 0.6, 0.58) if bw else (0.62, 0.42, 0.26)), 1)
+        ig.add_color_stop_rgba(1, *((0.18, 0.18, 0.18) if bw else (0.2, 0.12, 0.08)), 1)
         c.set_source(ig)
         c.arc(ix, iy, ir, 0, 2 * math.pi)
         c.fill()

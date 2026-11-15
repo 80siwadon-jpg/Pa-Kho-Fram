@@ -34,7 +34,8 @@ SUB_COLOR = getattr(_scenes, "SUB_COLOR", INK)       # ซับ: ค่าเ�
 SUB_STROKE = getattr(_scenes, "SUB_STROKE", None)    # (ความหนา, สี) = ซับมีขอบ สำหรับพื้นมืด
 SUB_PHRASES = getattr(_scenes, "SUB_PHRASES", False)  # ซับสั้นทีละวลี (ตัดตรง ... แบ่งเวลาตามความยาว)
 SUB_SIZE_EP = getattr(_scenes, "SUB_SIZE", None)
-AMBIENCE = getattr(_scenes, "AMBIENCE", None)   # เสียงบรรยากาศใต้เสียงพากย์ {"rain": ระดับ, "drone": ระดับ}
+AMBIENCE = getattr(_scenes, "AMBIENCE", None)
+POST = getattr(_scenes, "POST", None)           # ปรับภาพทั้งเฟรมหลังวาดฉาก (เกรดสี/เกรน/แถบดำ) ก่อนวางซับ   # เสียงบรรยากาศใต้เสียงพากย์ {"rain": ระดับ, "drone": ระดับ}
 
 BUILD = os.path.join(ROOT, "build", EPISODE)
 FPS = int(os.environ.get("FPS", 60))
@@ -49,6 +50,7 @@ SUB_W = 900
 if LANDSCAPE:   # แนวนอน (YouTube): ไม่ต้องเว้นที่ให้ปุ่มแอป ซับอยู่ล่างจอ
     SAFE_SCALE, SAFE_TOP, SAFE_BOTTOM, SCENE_BOTTOM = 1.0, 0, H - 20, H
     SUB_TOP, SUB_SIZE, SUB_W = 900, 56, 1500
+SUB_TOP = getattr(_scenes, "SUB_TOP", SUB_TOP)
 
 IRIS_Y = H / 2 if LANDSCAPE else 860
 TL = None
@@ -126,6 +128,7 @@ def draw_scene(g, s, t, extra=(1.0, 1.0, 0, 0)):
     cam = (z * ez, dx + ex, dy + ey, rot)
     with g.alpha(a):
         g.scene_m = tuple(g.c.get_matrix())   # พิกัดฉากก่อนกล้อง (ใช้ย่อตัวหนังสือไม่ให้ล้นขอบ)
+        g.cam = cam   # ฉากใช้ทำ parallax ได้
         with camera.apply(g, cam):
             SCENES[s["name"]](g, lt, s["L"], d)
 
@@ -209,6 +212,8 @@ def render_frame(frame):
     header(g, t, tl)
     cover_overlay(g, t, tl)
     ctx.restore()
+    if POST:
+        POST(g, t)
     subtitles(g, t, tl)
     surf.flush()
     return np.ndarray((H, W, 4), np.uint8, surf.get_data())   # BGRA
