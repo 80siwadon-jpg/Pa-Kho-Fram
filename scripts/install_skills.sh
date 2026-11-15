@@ -18,6 +18,10 @@
 #   Mharis-code/videoanalyzer                                                                       MIT
 #   upbrew-tech/svg-creator-skill                                                                   Apache-2.0
 #   remotion-dev/skills   ไม่มีไฟล์ใบอนุญาตใน repo; ตัว Remotion ฟรีสำหรับบุคคล/บริษัทเล็ก (ดูสกิล remotion-license)
+#   obra/superpowers, softaworks/agent-toolkit, ludo-technologies/python-best-practices, Griff2325/cartoon-motion,
+#   themembershipguru/storytoon-skill, Boom-Vitt/claude-thai-skills, agent-dev-thai/praneet-front      MIT
+#   mhattingpete/claude-skills-marketplace                                                          Apache-2.0
+#   anthropics/skills   ใบอนุญาตแยกต่อสกิล (ส่วนใหญ่ Apache-2.0) — ไม่ลิงก์ docx/pptx/xlsx/pdf (มีในระบบแล้ว)
 #   mattypark/Motion-graphics-skill   ไม่มีไฟล์ใบอนุญาต (สงวนสิทธิ์โดยปริยาย) — ติดตั้งใช้ส่วนตัวเท่านั้น ห้ามแจกจ่ายต่อ
 set -euo pipefail
 REPOS="${SKILL_REPOS:-$HOME/.claude/skill-repos}"
@@ -40,6 +44,9 @@ link() {    # folder-that-has-SKILL.md  skill-name
   if [ -e "$DEST/$name" ] && [ ! -L "$DEST/$name" ]; then
     echo "skip $name: $DEST/$name exists and is not a link"; return
   fi
+  if [ -L "$DEST/$name" ] && [ "$(readlink "$DEST/$name")" != "$src" ]; then
+    echo "skip $name: already linked to $(readlink "$DEST/$name")"; return
+  fi
   ln -sfn "$src" "$DEST/$name"
   echo "linked $name"
 }
@@ -51,7 +58,10 @@ for r in artemnovitckii/claude-animation-skills diffusionstudio/lottie feitangyu
          Barty-Bart/motion-graphics mattypark/Motion-graphics-skill charlie947/motion-graphics-skills \
          remotion-dev/skills Jakeschincariol/youtube-agent-skill AgriciDaniel/claude-youtube yaxeen/storytelling-skills \
          kajisho5/ffmpeg-skill bangtutorial/bang-motion echris6/motion-video-kit haidrrrry/claude-remotion-skill \
-         upbrew-tech/svg-creator-skill Mharis-code/videoanalyzer; do
+         upbrew-tech/svg-creator-skill Mharis-code/videoanalyzer \
+         obra/superpowers anthropics/skills mhattingpete/claude-skills-marketplace softaworks/agent-toolkit \
+         ludo-technologies/python-best-practices Griff2325/cartoon-motion themembershipguru/storytoon-skill \
+         Boom-Vitt/claude-thai-skills agent-dev-thai/praneet-front; do
   fetch "$r"
 done
 
@@ -83,3 +93,22 @@ link "$REPOS/echris6/motion-video-kit/business-motion-film" business-motion-film
 link "$REPOS/haidrrrry/claude-remotion-skill/remotion-motion-graphics" remotion-motion-graphics
 link "$REPOS/upbrew-tech/svg-creator-skill" svg-creator
 link "$REPOS/Mharis-code/videoanalyzer" video-analyze
+
+pick() {    # repo/subdir  name...   (ลิงก์เฉพาะสกิลที่เลือก)
+  local base="$1"; shift
+  for n in "$@"; do link "$REPOS/$base/$n" "$n"; done
+}
+for d in "$REPOS"/obra/superpowers/skills/*/ "$REPOS"/ludo-technologies/python-best-practices/skills/*/; do
+  link "${d%/}" "$(basename "$d")"
+done
+pick anthropics/skills/skills algorithmic-art canvas-design frontend-design webapp-testing mcp-builder slack-gif-creator theme-factory
+pick softaworks/agent-toolkit/skills mermaid-diagrams excalidraw writing-clearly-and-concisely humanizer reducing-entropy \
+     skill-judge lesson-learned session-handoff commit-work qa-test-planner requirements-clarity crafting-effective-readmes dependency-updater
+pick mhattingpete/claude-skills-marketplace/code-operations-plugin/skills code-refactor
+pick mhattingpete/claude-skills-marketplace/productivity-skills-plugin/skills code-auditor codebase-documenter
+pick mhattingpete/claude-skills-marketplace/engineering-workflow-plugin/skills test-fixing feature-planning
+pick mhattingpete/claude-skills-marketplace/visual-documentation-plugin/skills flowchart-creator timeline-creator
+pick Boom-Vitt/claude-thai-skills/skills thai-social-caption thai-translate thai-text-processing thai-date-format thai-festival-card
+link "$REPOS/Griff2325/cartoon-motion/skills/cartoon-motion" cartoon-motion
+link "$REPOS/themembershipguru/storytoon-skill" storytoon
+link "$REPOS/agent-dev-thai/praneet-front/skills/praneet-front" praneet-front
