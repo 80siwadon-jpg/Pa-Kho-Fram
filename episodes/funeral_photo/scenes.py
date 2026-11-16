@@ -48,6 +48,10 @@ def shoulders(g, look, x, y, sc):
     if sc <= 2.0:   # ภาพนอนบนเตียง/ไม่ใช่ภาพใกล้ ไม่ต้องมีไหล่
         return
     with g.at(x, y, sc):
+        ch = sys.modules["chars"]
+        if getattr(getattr(ch, "_fp", ch), "STYLE", "") == "sigma":
+            ch.torso(g, look, g.t)
+            return
         _rr(g.c, -22, 40, 44, 60, 10)
         _shade(g.c, look.skin, 3, 0.3)
         g.blob(0, 175, 150, 95, look.suit, 3, 7)

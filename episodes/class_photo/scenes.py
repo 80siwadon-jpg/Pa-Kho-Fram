@@ -25,9 +25,10 @@ shoulders, desk, crt, phone, envelope = FP.shoulders, C.desk, C.crt, C.phone, C.
 darken, glow, fill_rect, vignette, incense = C.darken, C.glow, C.fill_rect, C.vignette, C.incense
 
 # ค่าทั่วไปเหมือนตอน 1 (ซับ, เสียงบรรยากาศ, เกรดสีหนัง, ชื่อช่อง)
-SUB_COLOR, SUB_STROKE, SUB_PHRASES, SUB_SIZE, SUB_TOP = FP.SUB_COLOR, FP.SUB_STROKE, True, FP.SUB_SIZE, FP.SUB_TOP
+SUB_COLOR, SUB_PHRASES, SUB_TOP = FP.SUB_COLOR, True, FP.SUB_TOP
+# สไตล์คลิปต้นแบบ (TikTok): ซับขาวเงานุ่ม ไม่มีขอบหนา ตัวเล็กลงเล็กน้อย
+SUB_STROKE, SUB_SHADOW, SUB_SIZE = None, 1.0, 50
 AMBIENCE = {"rain": 0.02, "drone": 0.11}
-POST = FP.POST
 FP.LIGHTS.update({
     "school_dusk": (300, 250, (1.0, 0.7, 0.45), 0.55), "school_night": (1700, 300, (1.0, 0.82, 0.55), 0.55),
     "classroom": (1500, 200, (1.0, 0.9, 0.7), 0.4), "classroom_dark": (960, 0, (0.7, 0.85, 1.0), 0.6),
@@ -96,6 +97,38 @@ def photo_screen(extra=0, extra_k=1.0, zoom=1.0, fx=0.0, fy=0.0, dialog=None):
 
 def mon(g, t, scr, sc=2.1):
     FP.monitor_close(g, t, scr, sc)
+
+
+def name_card(g, lt, name, role, x=48, y=100):
+    """การ์ดชื่อมุมซ้ายบน (ใต้ชื่อช่อง) แบบคลิปต้นแบบ: พื้นขาว จุดสีเขียว ชื่อตัวหนา บทบาทตัวเล็ก — โชว์ ~3.2 วิ"""
+    k = min(1.0, e_out(min(lt / 0.35, 1.0))) * (1.0 - e_io(min(max(lt - 3.2, 0) / 0.35, 1.0)))
+    if k <= 0.01:
+        return
+    c = g.c
+    wbox = max(300, 34 * len(name) * 0.75 + 90, 16 * len(role) * 0.62 + 70)
+    with g.alpha(k):
+        with g.at(x - 30 * (1 - k), y):
+            _rr(c, 0, 0, wbox, 110, 12)
+            c.set_source_rgba(0.98, 0.97, 0.94, 0.96)
+            c.fill()
+            g.circle(30, 34, 7, hexc("#3fae5a"), 0)
+            g.text(name, 48, 34, 36, "kanit", hexc("#1c1c1e"), anchor="l")
+            g.text(role, 30, 80, 22, "kanitm", hexc("#6b6b70"), anchor="l")
+
+
+def tag(fn, name, role):
+    def shot(g, t, lt):
+        fn(g, t, lt)
+        g.card = (lt, name, role)   # วาดทีหลังใน POST (พิกัดจอ ไม่โดนกล้องซูม/แพน)
+    return shot
+
+
+def POST(g, t):
+    FP.POST(g, t)
+    card = getattr(g, "card", None)
+    if card:
+        name_card(g, *card)
+        g.card = None
 
 
 def sepia(g):
@@ -205,7 +238,7 @@ def s_crew(g, t, L, d):
         x = lerp(1300, -300, e_io(min(lt / 1.6, 1.0)))
         ton(g, x, 1180, 0.85, "shock", "v", -0.8, lean=-12)
         person(g, 1500, 1220, C.PETE, 0.84, mood="smug", pose="down", turn=-0.6, seed=1)
-    run_shots(g, t, L, d, [a, b, c_, d_, e, f])
+    run_shots(g, t, L, d, [a, tag(b, "แม่", "แม่ของผม · หายป่วยแล้ว"), c_, d_, tag(e, "เณรต้น", "อายุ 12 · วัดฝั่งตรงข้าม"), f])
 
 
 # ================================================================ 4 teacher
@@ -248,7 +281,7 @@ def s_teacher(g, t, L, d):
         x = lerp(1200, 2100, e_io(min(lt / 2.0, 1.0)))
         person(g, x, 1180, C.SOMJAI, 0.82, mood="sad", pose="down", turn=0.7, seed=12)
         person(g, 520, 1220, C.PETE, 0.84, mood="worry", pose="hold", turn=0.6, seed=1)
-    run_shots(g, t, L, d, [a, b, c_, d_, e, f])
+    run_shots(g, t, L, d, [a, tag(b, "ครูสมใจ", "ครูประจำชั้น ป.6 · เกษียณแล้ว"), c_, d_, e, f])
 
 
 # ================================================================ 5 night1
@@ -600,7 +633,7 @@ def s_flashback(g, t, L, d):
         face(g, C.SOMJAI, CX, 620, 3.2, "sad", talk(t), 0.0, (0, 0.4), 12)
         for k in range(2):
             g.blob(CX - 60 + k * 120, 640 + (t * 40 + k * 30) % 60, 5, 8, (0.7, 0.85, 0.95, 0.8), 0, k)
-    run_shots(g, t, L, d, [a, b, c_, d_, e, f, h, i_])
+    run_shots(g, t, L, d, [a, tag(b, "ฝ้าย", "ด.ญ.ฝ้าย ใจดี · ป.6 ปี 2542"), c_, d_, e, f, h, i_])
 
 
 # ================================================================ 13 reflect
@@ -664,7 +697,7 @@ def s_advice(g, t, L, d):
 def s_mother(g, t, L, d):
     def a(g, t, lt):
         phian_house(g, 1.0 + 0.04 * lt / 3)
-        x = lerp(-100, 500, slide(lt, 0, 1, 3.0))
+        x = lerp(250, 650, slide(lt, 0, 1, 3.0))
         person(g, x, 1220, C.PETE, 0.84, mood="neutral", pose="down", turn=0.6, seed=1)
 
     def b(g, t, lt):
@@ -690,7 +723,7 @@ def s_mother(g, t, L, d):
     def f(g, t, lt):
         phian_house(g, 1.4, 600, 450)
         face(g, C.PETE, 800, 600, 3.2, "sad", 0.0, -0.8, (-1, 0.2), 1)
-    run_shots(g, t, L, d, [a, b, c_, d_, e, f])
+    run_shots(g, t, L, d, [a, b, tag(c_, "ยายเพียร", "แม่ของฝ้าย"), d_, e, f])
 
 
 # ================================================================ 17 reunion

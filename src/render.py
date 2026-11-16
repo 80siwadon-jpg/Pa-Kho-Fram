@@ -31,7 +31,8 @@ TRANSITIONS = getattr(_scenes, "TRANSITIONS", {})
 OWN_COVER = getattr(_scenes, "OWN_COVER", False)   # ตอนที่วาดหน้าปกเองใน s_hook
 BG = getattr(_scenes, "BG", PAPER)                   # สีพื้นหลัง (ค่าเริ่มต้น = ขาว)
 SUB_COLOR = getattr(_scenes, "SUB_COLOR", INK)       # ซับ: ค่าเริ่มต้นตัวดำไม่มีขอบ
-SUB_STROKE = getattr(_scenes, "SUB_STROKE", None)    # (ความหนา, สี) = ซับมีขอบ สำหรับพื้นมืด
+SUB_STROKE = getattr(_scenes, "SUB_STROKE", None)
+SUB_SHADOW = getattr(_scenes, "SUB_SHADOW", 0.0)   # >0 = ซับขาวเงานุ่ม (ไม่มีขอบหนา) ค่าความเข้มเงา    # (ความหนา, สี) = ซับมีขอบ สำหรับพื้นมืด
 SUB_PHRASES = getattr(_scenes, "SUB_PHRASES", False)  # ซับสั้นทีละวลี (ตัดตรง ... แบ่งเวลาตามความยาว)
 SUB_SIZE_EP = getattr(_scenes, "SUB_SIZE", None)
 AMBIENCE = getattr(_scenes, "AMBIENCE", None)
@@ -108,6 +109,10 @@ def subtitles(g, t, tl):
             sw_, sc_ = SUB_STROKE or (0, PAPER)
             _, _, sw, sh = text_sprite(ln["text"], size, "kanitsb", SUB_COLOR, sw_, sc_, SUB_W)
             fit = min(1.0, (SUB_W + 40) / sw, (SAFE_BOTTOM - SUB_TOP - 10) / sh)   # ย่อให้พอดีกรอบ
+            if SUB_SHADOW:   # เงานุ่มใต้ตัวอักษร (ซ้อนขอบโปร่งหลายชั้นแทนการเบลอ)
+                for sw2, a2 in ((16, 0.07), (11, 0.10), (7, 0.14), (4, 0.2)):
+                    g.text(ln["text"], W / 2, SUB_TOP + sh * fit / 2 + 3, size, "kanitsb", (0, 0, 0, a2 * SUB_SHADOW),
+                           sc=(0.85 + 0.15 * k) * fit, maxw=SUB_W, stroke=sw2, stroke_color=(0, 0, 0, a2 * SUB_SHADOW))
             g.text(ln["text"], W / 2, SUB_TOP + sh * fit / 2, size, "kanitsb", SUB_COLOR,
                    sc=(0.85 + 0.15 * k) * fit, maxw=SUB_W, stroke=sw_, stroke_color=sc_)
             return

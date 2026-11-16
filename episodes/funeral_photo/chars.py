@@ -609,12 +609,22 @@ def killer_reflection(g, cx, cy, sc=1.0, raise_k=1.0):
 import people as _people  # noqa: E402
 
 
+# สไตล์หน้า: "classic" = ตาโตแบบตอน 1, "sigma" = ตาเล็ก คิ้วสั้น จมูกเส้นเดียว (แบบคลิปต้นแบบ TikTok)
+STYLE = "classic"
+
+
 def _darker(col, k=0.78):
     return (col[0] * k, col[1] * k, col[2] * k, col[3] if len(col) > 3 else 1.0)
 
 
 def _egg(c, w, top=-92, chin=74, fx=0.0):
     """หน้ากลม แก้มอิ่ม คางมน"""
+    if STYLE == "sigma":   # หน้ากลมกว้าง กรามมน (แบบคลิปต้นแบบ)
+        pts = [(0, top + 4), (w * 0.78, top + 14), (w * 1.04, -30), (w * 1.05, 14), (w * 0.94, 48),
+               (w * 0.66, 72), (fx * 0.4 + w * 0.26, chin + 4), (fx * 0.4, chin + 6)]
+        full = pts + [(-x + fx * 0.8 if y > 20 else -x, y) for x, y in reversed(pts[1:-1])]
+        _smooth_path(c, full)
+        return full
     pts = [(0, top), (w * 0.74, top + 12), (w * 1.04, -34), (w * 1.06, 8), (w * 0.9, 46),
            (w * 0.55, 70), (fx * 0.4 + w * 0.2, chin + 2), (fx * 0.4, chin + 4)]
     full = pts + [(-x + fx * 0.8 if y > 20 else -x, y) for x, y in reversed(pts[1:-1])]
@@ -689,6 +699,10 @@ def flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed=
     c.translate(0, 70)
     c.rotate(math.radians(tilt))
     c.translate(0, -70)
+    if STYLE == "sigma":   # หัวกลมขึ้น (กว้าง:สูง ใกล้ 0.8)
+        c.translate(0, 60)
+        c.scale(1.07, 0.9)
+        c.translate(0, -60)
     _flat_head(g, look, mood, talk, turn, (look_at[0] + gx, look_at[1] + gy), seed, lw,
                0.0 if mood in ("shock", "shout") else lid_amount(t, seed))
     c.restore()
@@ -706,8 +720,8 @@ def _flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed
         _fill_grad(c, hair, 0.75)
     if look.hair == "bun":
         g.circle(0, -122, w * 0.42, hair, 0)
-    # คอ (ยาว เรียว)
-    _rr(c, -w * 0.36, 30, w * 0.72, 110, 12)
+    # คอ (ยาว เรียว) — สไตล์ sigma คอสั้นลง ให้คอเสื้ออยู่หน้าคอ
+    _rr(c, -w * 0.36, 30, w * 0.72, 110 if STYLE != "sigma" else 75, 12)
     _fill_grad(c, _darker(skin, 0.92), 0.8)
     # หู
     for sx in (-1, 1):
@@ -767,12 +781,15 @@ def _flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed
             _stroke(c, [(sx * w * 0.26 + fx, 40), (sx * w * 0.32 + fx, 62)], 2, line, 0.5)
     # ตาโต
     blink = lid > 0.97
-    ey = -4
+    sig = STYLE == "sigma"
+    ey = -4 if not sig else -2
+    EX = 0.42 if not sig else 0.37
     sad = mood in ("sad", "worry")
     for sx in (-1, 1):
-        ex = sx * w * 0.42 + fx
-        ew = w * 0.27
-        eh = w * (0.25 if mood != "shock" else 0.31) * (0.8 if mood in ("angry", "smug") else 1.0)
+        ex = sx * w * EX + fx
+        ew = w * (0.27 if not sig else 0.16)
+        eh = w * ((0.25 if mood != "shock" else 0.31) if not sig else (0.135 if mood != "shock" else 0.17)) * \
+            (0.8 if mood in ("angry", "smug") else 1.0)
         if blink:
             _stroke(c, [(ex - ew, ey), (ex, ey + 6), (ex + ew, ey)], 3.5, hexc("#2a1d16"), 1.0)
             continue
@@ -787,7 +804,7 @@ def _flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed
         c.save()
         c.clip()
         ix, iy = ex + look_at[0] * ew * 0.3, ey + 2 + look_at[1] * eh * 0.25
-        ir = eh * 0.86
+        ir = eh * (0.86 if not sig else 0.8)
         ig = cairo.RadialGradient(ix, iy + ir * 0.4, ir * 0.1, ix, iy, ir)
         bw = abs(skin[0] - skin[2]) < 0.03   # รูปขาวดำ -> ตาเทา
         ig.add_color_stop_rgba(0, *((0.6, 0.6, 0.58) if bw else (0.62, 0.42, 0.26)), 1)
@@ -796,8 +813,9 @@ def _flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed
         c.arc(ix, iy, ir, 0, 2 * math.pi)
         c.fill()
         g.circle(ix, iy, ir * 0.48, hexc("#0e0906"), 0)
-        g.circle(ix - ir * 0.36, iy - ir * 0.38, ir * 0.3, (1, 1, 1, 0.95), 0)
-        g.circle(ix + ir * 0.34, iy + ir * 0.3, ir * 0.13, (1, 1, 1, 0.8), 0)
+        g.circle(ix - ir * 0.36, iy - ir * 0.38, ir * (0.3 if not sig else 0.34), (1, 1, 1, 0.95), 0)
+        if not sig:
+            g.circle(ix + ir * 0.34, iy + ir * 0.3, ir * 0.13, (1, 1, 1, 0.8), 0)
         if lid > 0.01:   # เปลือกตาบนเลื่อนลง ล่างขึ้น ~15% (ปิดกลางตา)
             top = ey - eh - 4 + (2 * eh + 8) * 0.85 * lid
             fill_rect(c, ex - ew - 6, ey - eh - 8, 2 * ew + 12, top - (ey - eh - 8), _darker(skin, 0.93))
@@ -810,29 +828,38 @@ def _flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed
         c.restore()
         ld = (2 * eh + 4) * 0.85 * lid   # ขนตาบนเลื่อนตามเปลือกตา
         _stroke(c, [(ex - ew * 1.08, ey + 2), (ex - ew * 0.3, ey - eh * 1.05 + ld), (ex + ew * 0.5, ey - eh * 1.02 + ld), (ex + ew * 1.1, ey - 1)],
-                4, hexc("#21160f"), 1.0)
-        _stroke(c, [(ex - ew * 0.7, ey + eh * 0.95), (ex + ew * 0.6, ey + eh * 0.92)], 1.8, line, 0.45)
+                4 if not sig else 3, hexc("#21160f"), 1.0)
+        if not sig:
+            _stroke(c, [(ex - ew * 0.7, ey + eh * 0.95), (ex + ew * 0.6, ey + eh * 0.92)], 1.8, line, 0.45)
         if sad or look.age > 0.55:
             _stroke(c, [(ex - ew * 0.7, ey + eh * 1.35), (ex + ew * 0.7, ey + eh * 1.35)], 2, line, 0.5)
     # คิ้ว
     tilt = {"angry": -0.32, "shout": -0.32, "firm": -0.15, "sad": 0.3, "worry": 0.3, "shock": 0.0, "smug": -0.1}.get(mood, 0.0)
-    by = ey - w * 0.46 - (8 if mood == "shock" else 0)
+    by = ey - w * (0.46 if not sig else 0.34) - (8 if mood == "shock" else 0)
+    bcol = hexc("#2a1d16") if look.hair != "bald" else hexc("#d9d6cf")
     for sx in (-1, 1):
-        bx = sx * w * 0.42 + fx
+        bx = sx * w * EX + fx
         inner = by - tilt * w * 0.25
         outer = by + tilt * w * 0.12
-        _stroke(c, [(bx - sx * w * 0.2, inner), (bx + sx * w * 0.22, outer)], 3.5 * look.brow + 1.5, hexc("#2a1d16") if look.hair != "bald" else hexc("#d9d6cf"), 1.0)
-    # จมูก (เงาเล็ก ๆ)
-    glow(g, fx + w * 0.08, 26, w * 0.12, _darker(skin, 0.6), 0.28)   # จมูก = เงานุ่ม ๆ
-    _stroke(c, [(fx - w * 0.06, 34), (fx + w * 0.08, 35)], 2.2, line, 0.55)
+        if not sig:
+            _stroke(c, [(bx - sx * w * 0.2, inner), (bx + sx * w * 0.22, outer)], 3.5 * look.brow + 1.5, bcol, 1.0)
+        else:   # คิ้วสั้นโค้งหนา
+            _stroke(c, [(bx - sx * w * 0.15, inner + 1), (bx, (inner + outer) / 2 - 4), (bx + sx * w * 0.15, outer + 2)],
+                    3.0 * look.brow + 1.6, bcol, 1.0)
+    # จมูก
+    if not sig:
+        glow(g, fx + w * 0.08, 26, w * 0.12, _darker(skin, 0.6), 0.28)   # จมูก = เงานุ่ม ๆ
+        _stroke(c, [(fx - w * 0.06, 34), (fx + w * 0.08, 35)], 2.2, line, 0.55)
+    else:   # จมูกเส้นเดียวแบบตะขอเล็ก
+        _stroke(c, [(fx + w * 0.02, 8), (fx + w * 0.07, 26), (fx - w * 0.02, 30)], 2.6, _darker(skin, 0.55), 0.8)
     # ปาก
-    my = 48
+    my = 48 if not sig else 50
     open_ = 0.0
     if talk:
         open_ = max(0.0, math.sin(t * 15 + seed)) * float(talk) * 0.8
     if mood in ("shock", "shout"):
         open_ = max(open_, 1.0)
-    mw = w * (0.18 if mood != "shout" else 0.3)
+    mw = w * (0.18 if mood != "shout" else 0.3) * (1.0 if not sig else 0.75)
     if open_ > 0.15:
         c.save()
         c.translate(fx, my)
@@ -889,9 +916,11 @@ def _flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed
         col = hexc("#2a2622")
         rnd = look.glasses.startswith("round")
         for sx in (-1, 1):
-            ex = sx * w * 0.42 + fx
+            ex = sx * w * EX + fx
             c.new_path()
-            if rnd:
+            if sig:
+                c.arc(ex, ey, w * 0.25, 0, 2 * math.pi)
+            elif rnd:
                 c.arc(ex, ey, w * 0.34, 0, 2 * math.pi)
             else:
                 _rr(c, ex - w * 0.36, ey - w * 0.28, w * 0.72, w * 0.54, 10)
@@ -900,11 +929,38 @@ def _flat_head(g, look, mood="neutral", talk=0.0, turn=0.0, look_at=(0, 0), seed
             c.set_source_rgba(*col)
             c.set_line_width(3.2 if not look.glasses.endswith("thin") else 3.0)
             c.stroke()
-        _stroke(c, [(fx - w * 0.07, ey - 4), (fx + w * 0.07, ey - 4)], 3, col, 1.0)
+        bw_ = 0.12 if sig else 0.07
+        _stroke(c, [(fx - w * bw_, ey - 4), (fx + w * bw_, ey - 4)], 3, col, 1.0)
 
 
 _people.head = flat_head
 head = flat_head
+
+
+def torso(g, look, t=0.0):
+    """ลำตัวช่วงบนสำหรับภาพใกล้ (พิกัดหัว): ไหล่พองกลม แขนเสื้อ คอเสื้อ — สไตล์ sigma"""
+    c = g.c
+    col = look.suit
+    br = 0.5 * math.sin(t * 2 * math.pi / 4.2)   # หายใจ
+    ow = getattr(look, "outfit", "tee")
+    with g.at(0, br):
+        # ลำตัว: ไหล่โค้งมนพอง (ไม่กว้างเกินหัว ~2.4 เท่า)
+        _smooth_path(c, [(-50, 92), (50, 92), (104, 104), (132, 132), (140, 190), (142, 380), (-142, 380), (-140, 190), (-132, 132), (-104, 104)])
+        _fill_grad(c, col, 0.8)
+        # แขนเสื้อ: เส้นแบ่งแขนกับลำตัว + ไฮไลต์บนไหล่
+        for sx in (-1, 1):
+            _stroke(c, [(sx * 96, 150), (sx * 100, 260), (sx * 106, 380)], 2.4, _darker(col, 0.7), 0.55)
+        # คอเสื้อ
+        if ow in ("gown",):
+            _smooth_path(c, [(-50, 94), (36, 94), (110, 380), (50, 380)])
+            _fill_grad(c, _darker(col, 0.88), 0.8)
+        elif ow == "hoodie":
+            _smooth_path(c, [(-70, 96), (70, 96), (82, 128), (0, 150), (-82, 128)])
+            _fill_grad(c, _darker(col, 0.86), 0.8)
+            for sx in (-1, 1):
+                _stroke(c, [(sx * 22, 140), (sx * 26, 210)], 3, hexc("#e8e6e0"), 0.9)
+        else:
+            _stroke(c, [(-46, 100), (-22, 118), (0, 122), (22, 118), (46, 100)], 4, _darker(col, 0.62), 0.9)
 
 
 # ================================================================ แสงเงาทั้งเฟรม (บรรยากาศเสมือนจริง)

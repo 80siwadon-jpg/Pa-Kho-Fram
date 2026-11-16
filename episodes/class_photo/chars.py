@@ -15,6 +15,7 @@ from gfx import INK, WHITE, H, W, hexc, hn, lerp  # noqa: E402,F401
 from people import Look, _rr, _shade, _smooth_path, _stroke, person  # noqa: E402,F401
 
 head = _fp.flat_head
+_fp.STYLE = "sigma"   # หน้าตาแบบคลิปต้นแบบ: ตาเล็ก คิ้วสั้น หัวกลม ไหล่พอง
 
 # ---------------------------------------------------------------- looks
 TON = Look(hair="buzz", hair_col=hexc("#3a2c22"), skin=hexc("#c98f63"), outfit="gown", suit=hexc("#e07a1f"),
