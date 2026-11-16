@@ -4,3 +4,4 @@ __pycache__/
 
 # ไฟล์มาสเตอร์ใหญ่เกิน 100MB (GitHub รับไม่ได้) — commit เฉพาะ *_web.mp4
 output/funeral_photo_1080p60.mp4
+output/class_photo_1080p60.mp4
