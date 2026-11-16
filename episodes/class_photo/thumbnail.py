@@ -45,8 +45,8 @@ ctx.set_source_rgba(*hexc("#e02a2a"))
 ctx.set_line_width(14)
 ctx.stroke()
 # หน้าพีทซ้าย
-with g.at(470, 640, 4.2):
-    g.blob(0, 175, 150, 95, C.PETE.suit, 3, 7)
+with g.at(470, 600, 4.0):
+    C.torso(g, C.PETE)
     C.flat_head(g, C.PETE, "shock", 0.0, 0.45, (1, 0), 99)
 C.light_pass(g, 1330, 470, (0.7, 0.88, 1.0), 0.7, 1500, dust=False)
 C.vignette(g, 0.6)
